@@ -1,6 +1,8 @@
 # Quick Alarm
 
 A clean, modern, and lightweight Android alarm application built with Jetpack Compose and Kotlin. It allows users to quickly set timers and alarms with preset intervals or custom durations, featuring full-screen alarm alerts and system notification integration.
+
+
 **APK Output / Download Location:** `app/build/outputs/apk/debug/app-debug.apk`
 ---
 
