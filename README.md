@@ -1,76 +1,78 @@
-# Quick Alarm App
+# Quick Alarm
 
-## 📱 APK Installation & Download
+A clean, modern, and lightweight Android alarm application built with Jetpack Compose and Kotlin. It allows users to quickly set timers and alarms with preset intervals or custom durations, featuring full-screen alarm alerts and system notification integration.
 
-The ready-to-install debug APK for testing on an Android device is located locally at:
-```
-app/build/outputs/apk/debug/app-debug.apk
-```
-* **Full Local Path:** `D:\Alaram\app\build\outputs\apk\debug\app-debug.apk`
-* **Direct Install via ADB:**
+---
+
+## 📱 Features
+
+- **Quick Presets:** One-tap alarm creation (e.g., 5 min, 10 min, 15 min, 30 min, 1 hour).
+- **Custom Duration:** Set flexible alarms for custom hours and minutes.
+- **Full-Screen Alarm Alert:** High-visibility wake-up screen (`AlarmActivity`) with sound, vibration, and dismissal options.
+- **Reliable Scheduling:** Uses Android's `AlarmManager` with exact alarm capabilities (`SCHEDULE_EXACT_ALARM` / `USE_EXACT_ALARM`).
+- **Boot Persistence:** Automatically restores scheduled alarms after device reboots using `BootReceiver`.
+- **Modern UI:** Designed with Jetpack Compose, Material 3, and dynamic color theming.
+
+---
+
+## 🛠️ Prerequisites & Requirements
+
+Before building or running the project, make sure you have:
+
+- **Android Studio:** Hedgehog (2023.1.1) or newer
+- **JDK:** Java Development Kit (JDK) 17
+- **Android SDK:**
+  - **Compile SDK:** 34 (Android 14)
+  - **Target SDK:** 34
+  - **Min SDK:** 26 (Android 8.0 Oreo)
+- **Kotlin:** 1.9+
+- **Gradle:** Compatible with Android Gradle Plugin 8.3+
+
+---
+
+## 🚀 Steps to Build & Run the App
+
+### 1. Open the Project
+1. Launch **Android Studio**.
+2. Select **Open** and select the project root directory.
+3. Allow Android Studio to complete Gradle sync and download required dependencies.
+
+### 2. Run on Device / Emulator
+1. Connect an Android device with **USB Debugging enabled** or start an Android Virtual Device (AVD / Emulator) running Android 8.0+.
+2. Select the `app` run configuration in the top toolbar.
+3. Click the **Run ▶** button (or press `Shift + F10`).
+
+### 3. Build APK via Command Line
+You can also build the APK using the Gradle wrapper:
+
+- **Windows (PowerShell / CMD):**
   ```bash
-  adb install app/build/outputs/apk/debug/app-debug.apk
+  .\gradlew.bat assembleDebug
+  ```
+- **macOS / Linux:**
+  ```bash
+  ./gradlew assembleDebug
   ```
 
 ---
 
-## 🚀 How to Upload / Push This Project to GitHub
+## 🏗️ Tech Stack & Architecture
 
-Follow these steps to upload this project to GitHub without affecting any project source files:
-
-### 1. Create a New Repository on GitHub
-1. Go to [GitHub - New Repository](https://github.com/new).
-2. Enter a repository name (e.g. `quick-alarm-android`).
-3. Set the repository to **Public** or **Private**.
-4. **Do NOT check** "Add a README file", ".gitignore", or "Choose a license" (we already have local files).
-5. Click **Create repository** and copy the repository URL (e.g., `https://github.com/<your-username>/quick-alarm-android.git`).
-
----
-
-### 2. Initialize Git & Commit Local Files
-Open PowerShell or your terminal in the project root directory (`D:\Alaram`) and run:
-
-```bash
-# Initialize git repository
-git init
-
-# Stage all project files (ignoring build artifacts automatically via .gitignore)
-git add .
-
-# Create initial commit
-git commit -m "Initial commit - Quick Alarm App"
-```
-
----
-
-### 3. Link Remote Repository & Push
-Run the following commands, replacing `<YOUR_GITHUB_REPO_URL>` with your repository URL:
-
-```bash
-# Rename default branch to main
-git branch -M main
-
-# Add GitHub remote origin
-git remote add origin <YOUR_GITHUB_REPO_URL>
-
-# Push code to GitHub
-git push -u origin main
-```
-
----
-
-## 🛠️ Tech Stack & Requirements
 - **Language:** Kotlin
-- **UI Toolkit:** Jetpack Compose (Material 3)
-- **Target SDK:** Android 34 (Android 14)
-- **Min SDK:** Android 26 (Android 8.0 Oreo)
-- **Build System:** Gradle (Kotlin DSL)
+- **UI Framework:** Jetpack Compose & Material 3
+- **Architecture:** MVVM (Model-View-ViewModel) pattern
+- **Android Jetpack Components:**
+  - `AlarmManager` for precise time triggers
+  - `BroadcastReceiver` (`AlarmReceiver`, `BootReceiver`)
+  - `Activity` (`MainActivity`, `AlarmActivity`)
+  - `ViewModel` & Kotlin Coroutines
 
 ---
 
-## 🔨 Building the Project Locally
-To generate a fresh debug APK manually:
-```bash
-./gradlew assembleDebug
-```
-The output APK will be generated under `app/build/outputs/apk/debug/app-debug.apk`.
+## 📜 Permissions Used
+
+- `SCHEDULE_EXACT_ALARM` / `USE_EXACT_ALARM`: To trigger alarms at exact target times.
+- `POST_NOTIFICATIONS`: For displaying alarm notifications on Android 13+.
+- `RECEIVE_BOOT_COMPLETED`: To reschedule active alarms after the phone restarts.
+- `VIBRATE`: For vibration feedback when the alarm fires.
+- `WAKE_LOCK`: To wake the screen when an alarm triggers.
