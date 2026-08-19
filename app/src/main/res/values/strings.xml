@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Quick Alarm</string>
+    <string name="channel_name">Quick Alarms</string>
+    <string name="channel_description">Notifications for Quick Alarm alerts</string>
+</resources>
