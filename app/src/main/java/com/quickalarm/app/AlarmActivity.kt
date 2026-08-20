@@ -7,6 +7,7 @@ import android.content.IntentFilter
 import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.VibrationEffect
@@ -32,6 +33,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -57,6 +59,7 @@ import androidx.compose.ui.unit.sp
 import com.quickalarm.app.model.AlarmItem
 import com.quickalarm.app.ui.theme.QuickAlarmTheme
 import com.quickalarm.app.util.AlarmScheduler
+import com.quickalarm.app.util.AppSettings
 
 class AlarmActivity : ComponentActivity() {
 
@@ -88,6 +91,7 @@ class AlarmActivity : ComponentActivity() {
         }
 
         val alarmLabel = intent.getStringExtra("ALARM_LABEL") ?: "Quick Alarm"
+        val snoozeMinutes = AppSettings.getSnoozeMinutes(this)
 
         startAlarmSoundAndVibration()
 
@@ -101,17 +105,18 @@ class AlarmActivity : ComponentActivity() {
             QuickAlarmTheme {
                 AlarmRingingScreen(
                     label = alarmLabel,
+                    snoozeMinutes = snoozeMinutes,
                     onDismiss = {
                         stopAlarmSoundAndVibration()
                         finish()
                     },
-                    onSnooze = {
+                    onSnooze = { minutesToSnooze ->
                         stopAlarmSoundAndVibration()
-                        // Schedule 5 minute snooze
+                        // Schedule customized snooze
                         val snoozeItem = AlarmItem(
                             id = System.currentTimeMillis(),
-                            triggerTimeMillis = System.currentTimeMillis() + (5 * 60 * 1000),
-                            durationMinutes = 5,
+                            triggerTimeMillis = System.currentTimeMillis() + (minutesToSnooze * 60 * 1000L),
+                            durationMinutes = minutesToSnooze,
                             label = "Snoozed: $alarmLabel"
                         )
                         AlarmScheduler.scheduleAlarm(this@AlarmActivity, snoozeItem)
@@ -124,11 +129,18 @@ class AlarmActivity : ComponentActivity() {
 
     private fun startAlarmSoundAndVibration() {
         try {
-            val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-                ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+            val selectedSound = AppSettings.getSelectedSound(this)
+            val soundUri = selectedSound.getUri(this) ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
 
             mediaPlayer = MediaPlayer().apply {
-                setDataSource(this@AlarmActivity, soundUri)
+                try {
+                    setDataSource(this@AlarmActivity, soundUri)
+                } catch (e: Exception) {
+                    // Fallback to default alarm sound if custom sound failed
+                    val fallbackUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+                        ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                    setDataSource(this@AlarmActivity, fallbackUri)
+                }
                 setAudioAttributes(
                     AudioAttributes.Builder()
                         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
@@ -186,8 +198,9 @@ class AlarmActivity : ComponentActivity() {
 @Composable
 fun AlarmRingingScreen(
     label: String,
+    snoozeMinutes: Int,
     onDismiss: () -> Unit,
-    onSnooze: () -> Unit
+    onSnooze: (minutes: Int) -> Unit
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "PulseTransition")
     val scale by infiniteTransition.animateFloat(
@@ -310,7 +323,7 @@ fun AlarmRingingScreen(
                     }
 
                     Button(
-                        onClick = onSnooze,
+                        onClick = { onSnooze(snoozeMinutes) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
@@ -329,7 +342,7 @@ fun AlarmRingingScreen(
                                 tint = Color(0xFFCBD5E1)
                             )
                             Text(
-                                text = "Snooze (+5 Min)",
+                                text = "Snooze (+$snoozeMinutes Min)",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = Color(0xFFCBD5E1)

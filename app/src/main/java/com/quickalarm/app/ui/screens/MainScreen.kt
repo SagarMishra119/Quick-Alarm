@@ -1,13 +1,11 @@
 package com.quickalarm.app.ui.screens
 
 import android.Manifest
-import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.ContextCompat
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -16,51 +14,15 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AddAlert
-import androidx.compose.material.icons.filled.Alarm
-import androidx.compose.material.icons.filled.AlarmAdd
-import androidx.compose.material.icons.filled.AlarmOff
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.FlashOn
-import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -72,36 +34,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import com.quickalarm.app.model.AlarmItem
-import com.quickalarm.app.ui.theme.AccentAmber
-import com.quickalarm.app.ui.theme.AccentEmerald
-import com.quickalarm.app.ui.theme.DarkBackground
-import com.quickalarm.app.ui.theme.GradientCustom
-import com.quickalarm.app.ui.theme.GradientPreset15m
-import com.quickalarm.app.ui.theme.GradientPreset1h
-import com.quickalarm.app.ui.theme.GradientPreset2h
-import com.quickalarm.app.ui.theme.GradientPreset30m
-import com.quickalarm.app.ui.theme.GradientPreset4h
-import com.quickalarm.app.ui.theme.GradientPreset6h
-import com.quickalarm.app.ui.theme.PrimaryIndigo
-import com.quickalarm.app.ui.theme.SecondaryCyan
-import com.quickalarm.app.ui.theme.SurfaceCard
-import com.quickalarm.app.ui.theme.SurfaceCardBorder
-import com.quickalarm.app.ui.theme.TextMuted
-import com.quickalarm.app.ui.theme.TextPrimary
-import com.quickalarm.app.ui.theme.TextSecondary
+import com.quickalarm.app.model.PresetItem
+import com.quickalarm.app.model.SoundItem
+import com.quickalarm.app.ui.theme.*
 import com.quickalarm.app.util.AlarmScheduler
+import com.quickalarm.app.util.AppSettings
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-
-data class QuickPreset(
-    val minutes: Int,
-    val title: String,
-    val subtitle: String,
-    val gradient: List<Color>
-)
 
 @Composable
 fun MainScreen() {
@@ -113,14 +56,26 @@ fun MainScreen() {
     // Active alarms state
     var activeAlarms by remember { mutableStateOf(AlarmScheduler.getActiveAlarms(context)) }
 
-    // Last set alarm banner state
+    // Presets state
+    var presets by remember { mutableStateOf(AppSettings.getPresets(context)) }
+
+    // Sound and Snooze preferences
+    var selectedSound by remember { mutableStateOf(AppSettings.getSelectedSound(context)) }
+    var snoozeMinutes by remember { mutableIntStateOf(AppSettings.getSnoozeMinutes(context)) }
+
+    // Confirmation banner state
     var lastScheduledAlarm by remember { mutableStateOf<AlarmItem?>(null) }
     var showSuccessBanner by remember { mutableStateOf(false) }
 
-    // Custom duration dialog state
+    // Dialog visibility states
     var showCustomDialog by remember { mutableStateOf(false) }
+    var showSoundDialog by remember { mutableStateOf(false) }
+    var showSnoozeDialog by remember { mutableStateOf(false) }
+    var showManagePresetsDialog by remember { mutableStateOf(false) }
+    var presetToEdit by remember { mutableStateOf<PresetItem?>(null) }
+    var showEditPresetDialog by remember { mutableStateOf(false) }
 
-    // Permission state checks
+    // Permission states
     var hasExactAlarmPermission by remember { mutableStateOf(AlarmScheduler.canScheduleExactAlarms(context)) }
     var hasNotificationPermission by remember {
         mutableStateOf(
@@ -143,7 +98,7 @@ fun MainScreen() {
         }
     }
 
-    // Timer loop to update live clock and countdown timers every second
+    // Live ticker loop
     LaunchedEffect(Unit) {
         while (true) {
             currentTimeMillis = System.currentTimeMillis()
@@ -176,7 +131,7 @@ fun MainScreen() {
         } else {
             Toast.makeText(
                 context,
-                "Failed to set alarm. Check permissions.",
+                "Failed to set alarm. Check exact alarm permissions.",
                 Toast.LENGTH_SHORT
             ).show()
         }
@@ -198,15 +153,6 @@ fun MainScreen() {
         Toast.makeText(context, "⚡ Test alarm scheduled for 5 seconds from now!", Toast.LENGTH_LONG).show()
     }
 
-    val presets = listOf(
-        QuickPreset(15, "+15 Min", "Short Break", GradientPreset15m),
-        QuickPreset(30, "+30 Min", "Power Nap", GradientPreset30m),
-        QuickPreset(60, "+1 Hr", "Focus Session", GradientPreset1h),
-        QuickPreset(120, "+2 Hrs", "Deep Work", GradientPreset2h),
-        QuickPreset(240, "+4 Hrs", "Half Day", GradientPreset4h),
-        QuickPreset(360, "+6 Hrs", "Full Sleep", GradientPreset6h)
-    )
-
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = DarkBackground
@@ -221,14 +167,14 @@ fun MainScreen() {
                     .padding(horizontal = 20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                item { Spacer(modifier = Modifier.height(8.dp)) }
+                item { Spacer(modifier = Modifier.height(6.dp)) }
 
-                // Top App Header & Live Clock
+                // 1. Top App Header & Live Clock with v2.0 badge
                 item {
                     HeaderClockSection(currentTimeMillis = currentTimeMillis)
                 }
 
-                // Permission Banners if required
+                // 2. Permission Banners (if required)
                 if (!hasNotificationPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     item {
                         NotificationPermissionBanner(
@@ -249,7 +195,7 @@ fun MainScreen() {
                     }
                 }
 
-                // Success Scheduled Confirmation Card
+                // 3. Success Scheduled Confirmation Banner
                 item {
                     AnimatedVisibility(
                         visible = showSuccessBanner && lastScheduledAlarm != null,
@@ -265,98 +211,42 @@ fun MainScreen() {
                     }
                 }
 
-                // Section Title: Quick One-Tap Alarms
+                // 4. ACTIVE ALARMS SECTION (MOVED UPWARDS)
                 item {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(
-                            text = "ONE-TAP ALARMS",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = TextMuted,
-                            letterSpacing = 1.5.sp
-                        )
                         Row(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(Color(0xFF312E81))
-                                .clickable { setTestAlarm() }
-                                .padding(horizontal = 10.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.FlashOn,
+                                imageVector = Icons.Default.Schedule,
                                 contentDescription = null,
-                                tint = AccentAmber,
-                                modifier = Modifier.size(14.dp)
+                                tint = SecondaryCyan,
+                                modifier = Modifier.size(18.dp)
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "Test +5s",
-                                fontSize = 12.sp,
+                                text = "ACTIVE ALARMS (${activeAlarms.size})",
+                                fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White
+                                color = TextMuted,
+                                letterSpacing = 1.5.sp
+                            )
+                        }
+
+                        if (activeAlarms.isNotEmpty()) {
+                            Text(
+                                text = "Tap trash to cancel",
+                                fontSize = 11.sp,
+                                color = TextSecondary
                             )
                         }
                     }
                 }
 
-                // Grid of One-Tap Preset Buttons
-                item {
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        for (row in presets.chunked(2)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                for (preset in row) {
-                                    QuickAlarmButton(
-                                        preset = preset,
-                                        modifier = Modifier.weight(1f),
-                                        onClick = {
-                                            setAlarm(preset.minutes, "${preset.title} Quick Alarm")
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Custom Duration Button
-                item {
-                    CustomAlarmButton(
-                        onClick = { showCustomDialog = true }
-                    )
-                }
-
-                // Section Title: Active Alarms
-                item {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Schedule,
-                            contentDescription = null,
-                            tint = SecondaryCyan,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Text(
-                            text = "ACTIVE ALARMS (${activeAlarms.size})",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = TextMuted,
-                            letterSpacing = 1.5.sp
-                        )
-                    }
-                }
-
-                // Active Alarms List
                 if (activeAlarms.isEmpty()) {
                     item {
                         EmptyAlarmsState()
@@ -374,7 +264,148 @@ fun MainScreen() {
                     }
                 }
 
-                item { Spacer(modifier = Modifier.height(24.dp)) }
+                // 5. ONE-TAP ALARMS SECTION
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "ONE-TAP PRESETS (${presets.size})",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextMuted,
+                            letterSpacing = 1.5.sp
+                        )
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            // Manage Presets Button
+                            Row(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(Color(0xFF1E293B))
+                                    .border(1.dp, SurfaceCardBorder, RoundedCornerShape(10.dp))
+                                    .clickable { showManagePresetsDialog = true }
+                                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Tune,
+                                    contentDescription = "Manage",
+                                    tint = PrimaryIndigo,
+                                    modifier = Modifier.size(13.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Manage",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
+
+                            // Test +5s button
+                            Row(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(Color(0xFF312E81))
+                                    .clickable { setTestAlarm() }
+                                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.FlashOn,
+                                    contentDescription = null,
+                                    tint = AccentAmber,
+                                    modifier = Modifier.size(13.dp)
+                                )
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text(
+                                    text = "+5s",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Grid of One-Tap Preset Buttons (Responsive 2 per row)
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        for (row in presets.chunked(2)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                for (preset in row) {
+                                    PresetAlarmButton(
+                                        preset = preset,
+                                        modifier = Modifier.weight(1f),
+                                        onClick = {
+                                            setAlarm(preset.minutes, "${preset.title} Quick Alarm")
+                                        }
+                                    )
+                                }
+                                if (row.size == 1) {
+                                    Spacer(modifier = Modifier.weight(1f))
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 6. Custom Duration Button
+                item {
+                    CustomAlarmButton(
+                        onClick = { showCustomDialog = true }
+                    )
+                }
+
+                // 7. PREFERENCES SECTION (Sound & Snooze)
+                item {
+                    Text(
+                        text = "PREFERENCES & SETTINGS",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextMuted,
+                        letterSpacing = 1.5.sp
+                    )
+                }
+
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        // Sound Card
+                        PreferenceCard(
+                            icon = Icons.Default.MusicNote,
+                            iconColor = SecondaryCyan,
+                            title = "Alarm Sound",
+                            value = selectedSound.title,
+                            modifier = Modifier.weight(1f),
+                            onClick = { showSoundDialog = true }
+                        )
+
+                        // Snooze Card
+                        PreferenceCard(
+                            icon = Icons.Default.Snooze,
+                            iconColor = AccentAmber,
+                            title = "Snooze Time",
+                            value = "$snoozeMinutes Minutes",
+                            modifier = Modifier.weight(1f),
+                            onClick = { showSnoozeDialog = true }
+                        )
+                    }
+                }
+
+                item { Spacer(modifier = Modifier.height(20.dp)) }
             }
         }
 
@@ -385,6 +416,76 @@ fun MainScreen() {
                 onConfirm = { minutes, label ->
                     showCustomDialog = false
                     setAlarm(minutes, label)
+                }
+            )
+        }
+
+        // Sound Picker Dialog
+        if (showSoundDialog) {
+            SoundPickerDialog(
+                currentSound = selectedSound,
+                onDismiss = { showSoundDialog = false },
+                onSoundSelected = { newSound ->
+                    selectedSound = newSound
+                    AppSettings.setSelectedSound(context, newSound)
+                    showSoundDialog = false
+                    Toast.makeText(context, "Alarm sound updated: ${newSound.title}", Toast.LENGTH_SHORT).show()
+                }
+            )
+        }
+
+        // Snooze Settings Dialog
+        if (showSnoozeDialog) {
+            SnoozeDurationDialog(
+                currentSnoozeMinutes = snoozeMinutes,
+                onDismiss = { showSnoozeDialog = false },
+                onSnoozeSelected = { newMinutes ->
+                    snoozeMinutes = newMinutes
+                    AppSettings.setSnoozeMinutes(context, newMinutes)
+                    showSnoozeDialog = false
+                    Toast.makeText(context, "Snooze duration set to $newMinutes min", Toast.LENGTH_SHORT).show()
+                }
+            )
+        }
+
+        // Manage Presets Dialog
+        if (showManagePresetsDialog) {
+            PresetManageDialog(
+                presets = presets,
+                onDismiss = { showManagePresetsDialog = false },
+                onPresetsChanged = { updatedList ->
+                    presets = updatedList
+                    AppSettings.savePresets(context, updatedList)
+                },
+                onAddNewPreset = {
+                    presetToEdit = null
+                    showEditPresetDialog = true
+                },
+                onEditPreset = { preset ->
+                    presetToEdit = preset
+                    showEditPresetDialog = true
+                }
+            )
+        }
+
+        // Add / Edit Preset Dialog
+        if (showEditPresetDialog) {
+            PresetEditDialog(
+                presetToEdit = presetToEdit,
+                onDismiss = {
+                    showEditPresetDialog = false
+                    presetToEdit = null
+                },
+                onSave = { savedPreset ->
+                    if (presetToEdit != null) {
+                        AppSettings.updatePreset(context, savedPreset)
+                    } else {
+                        AppSettings.addPreset(context, savedPreset)
+                    }
+                    presets = AppSettings.getPresets(context)
+                    showEditPresetDialog = false
+                    presetToEdit = null
+                    Toast.makeText(context, "Preset saved!", Toast.LENGTH_SHORT).show()
                 }
             )
         }
@@ -433,14 +534,29 @@ fun HeaderClockSection(currentTimeMillis: Long) {
                     }
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "Quick Alarm",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = TextPrimary
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Box(
+                                modifier = Modifier
+                                    .background(Color(0xFF4338CA), RoundedCornerShape(6.dp))
+                                    .padding(horizontal = 5.dp, vertical = 1.dp)
+                            ) {
+                                Text(
+                                    text = "v2.0",
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
+                        }
                         Text(
-                            text = "Quick Alarm",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = TextPrimary
-                        )
-                        Text(
-                            text = "Instant Offline Timer",
+                            text = "Instant Offline Alarms",
                             fontSize = 11.sp,
                             color = TextSecondary
                         )
@@ -485,11 +601,13 @@ fun HeaderClockSection(currentTimeMillis: Long) {
 }
 
 @Composable
-fun QuickAlarmButton(
-    preset: QuickPreset,
+fun PresetAlarmButton(
+    preset: PresetItem,
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
+    val gradient = preset.getGradient()
+
     Card(
         modifier = modifier
             .height(96.dp)
@@ -504,7 +622,7 @@ fun QuickAlarmButton(
                 .background(
                     brush = Brush.verticalGradient(
                         colors = listOf(
-                            preset.gradient[0].copy(alpha = 0.25f),
+                            gradient[0].copy(alpha = 0.25f),
                             Color(0xFF1E293B)
                         )
                     )
@@ -512,7 +630,7 @@ fun QuickAlarmButton(
                 .border(
                     width = 1.dp,
                     brush = Brush.verticalGradient(
-                        colors = listOf(preset.gradient[0].copy(alpha = 0.6f), Color.Transparent)
+                        colors = listOf(gradient[0].copy(alpha = 0.6f), Color.Transparent)
                     ),
                     shape = RoundedCornerShape(20.dp)
                 )
@@ -536,13 +654,13 @@ fun QuickAlarmButton(
                     Box(
                         modifier = Modifier
                             .size(28.dp)
-                            .background(preset.gradient[0].copy(alpha = 0.3f), CircleShape),
+                            .background(gradient[0].copy(alpha = 0.3f), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.AddAlert,
                             contentDescription = null,
-                            tint = preset.gradient[0],
+                            tint = gradient[0],
                             modifier = Modifier.size(16.dp)
                         )
                     }
@@ -553,6 +671,73 @@ fun QuickAlarmButton(
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
                     color = TextSecondary
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun PreferenceCard(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    iconColor: Color,
+    title: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = modifier
+            .height(84.dp)
+            .shadow(4.dp, RoundedCornerShape(18.dp))
+            .clickable { onClick() },
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = SurfaceCard)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .border(1.dp, SurfaceCardBorder, RoundedCornerShape(18.dp))
+                .padding(12.dp)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = iconColor,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = title,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = TextMuted
+                        )
+                    }
+                    Icon(
+                        imageVector = Icons.Default.ChevronRight,
+                        contentDescription = null,
+                        tint = TextMuted,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+
+                Text(
+                    text = value,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    maxLines = 1
                 )
             }
         }
@@ -786,37 +971,44 @@ fun EmptyAlarmsState() {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = SurfaceCard)
+            .padding(vertical = 4.dp),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF131D31))
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .border(1.dp, SurfaceCardBorder.copy(alpha = 0.5f), RoundedCornerShape(18.dp))
+                .padding(horizontal = 20.dp, vertical = 18.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Default.AlarmOff,
-                contentDescription = null,
-                tint = TextMuted,
-                modifier = Modifier.size(48.dp)
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = "No Active Alarms",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextSecondary
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "Tap any quick duration button above to schedule an alarm instantly.",
-                fontSize = 12.sp,
-                color = TextMuted,
-                textAlign = TextAlign.Center
-            )
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(Color(0xFF1E293B), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AlarmOff,
+                    contentDescription = null,
+                    tint = TextMuted,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(14.dp))
+            Column {
+                Text(
+                    text = "No Active Alarms Scheduled",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = TextSecondary
+                )
+                Text(
+                    text = "Tap a preset below or set a custom duration",
+                    fontSize = 12.sp,
+                    color = TextMuted
+                )
+            }
         }
     }
 }

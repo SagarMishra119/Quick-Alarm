@@ -5,11 +5,11 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.media.RingtoneManager
 import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import com.quickalarm.app.model.AlarmItem
 import com.quickalarm.app.util.AlarmScheduler
+import com.quickalarm.app.util.AppSettings
 
 class AlarmReceiver : BroadcastReceiver() {
 
@@ -32,13 +32,14 @@ class AlarmReceiver : BroadcastReceiver() {
                     AlarmScheduler.removeAlarm(context, alarmId)
                 }
 
-                // Acquire WakeLock
+                // Acquire WakeLock to turn screen on and wake CPU
                 val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+                @Suppress("DEPRECATION")
                 val wakeLock = powerManager.newWakeLock(
                     PowerManager.FULL_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP or PowerManager.ON_AFTER_RELEASE,
                     "QuickAlarm:AlarmWakeLock"
                 )
-                wakeLock.acquire(10000) // Acquire for 10 seconds
+                wakeLock.acquire(10000) // 10 seconds
 
                 // Create FullScreen Intent for AlarmActivity
                 val fullScreenIntent = Intent(context, AlarmActivity::class.java).apply {
@@ -60,11 +61,13 @@ class AlarmReceiver : BroadcastReceiver() {
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
 
-                // Snooze PendingIntent (5 minutes)
+                // Snooze PendingIntent with user's customized snooze duration
+                val snoozeMinutes = AppSettings.getSnoozeMinutes(context)
                 val snoozeIntent = Intent(context, AlarmReceiver::class.java).apply {
                     this.action = ACTION_SNOOZE_ALARM
                     putExtra("NOTIFICATION_ID", alarmId.toInt())
                     putExtra("ALARM_LABEL", alarmLabel)
+                    putExtra("SNOOZE_MINUTES", snoozeMinutes)
                 }
                 val snoozePendingIntent = PendingIntent.getBroadcast(
                     context,
@@ -82,9 +85,7 @@ class AlarmReceiver : BroadcastReceiver() {
 
                 AlarmScheduler.createNotificationChannel(context)
 
-                val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-                    ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-
+                // Notification without sound to prevent dual-sound overlap with AlarmActivity's MediaPlayer
                 val notificationBuilder = NotificationCompat.Builder(context, AlarmScheduler.CHANNEL_ID)
                     .setSmallIcon(R.drawable.ic_launcher_foreground)
                     .setContentTitle("⏰ Quick Alarm Firing!")
@@ -92,12 +93,12 @@ class AlarmReceiver : BroadcastReceiver() {
                     .setPriority(NotificationCompat.PRIORITY_MAX)
                     .setCategory(NotificationCompat.CATEGORY_ALARM)
                     .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                    .setSound(soundUri)
+                    .setSilent(true)
                     .setAutoCancel(true)
                     .setFullScreenIntent(fullScreenPendingIntent, true)
                     .setContentIntent(fullScreenPendingIntent)
                     .addAction(R.drawable.ic_launcher_foreground, "Dismiss", dismissPendingIntent)
-                    .addAction(R.drawable.ic_launcher_foreground, "Snooze 5m", snoozePendingIntent)
+                    .addAction(R.drawable.ic_launcher_foreground, "Snooze ${snoozeMinutes}m", snoozePendingIntent)
 
                 val notifId = if (alarmId != -1L) alarmId.toInt() else System.currentTimeMillis().toInt()
                 notificationManager.notify(notifId, notificationBuilder.build())
@@ -108,7 +109,6 @@ class AlarmReceiver : BroadcastReceiver() {
                 if (notifId != -1) {
                     notificationManager.cancel(notifId)
                 }
-                // Send broadcast to stop ringtone if AlarmActivity is active
                 context.sendBroadcast(Intent("com.quickalarm.app.STOP_RINGTONE"))
             }
 
@@ -119,11 +119,11 @@ class AlarmReceiver : BroadcastReceiver() {
                 }
                 context.sendBroadcast(Intent("com.quickalarm.app.STOP_RINGTONE"))
 
-                // Schedule snooze alarm for 5 minutes
+                val snoozeMinutes = intent.getIntExtra("SNOOZE_MINUTES", AppSettings.getSnoozeMinutes(context))
                 val snoozeItem = AlarmItem(
                     id = System.currentTimeMillis(),
-                    triggerTimeMillis = System.currentTimeMillis() + (5 * 60 * 1000),
-                    durationMinutes = 5,
+                    triggerTimeMillis = System.currentTimeMillis() + (snoozeMinutes * 60 * 1000L),
+                    durationMinutes = snoozeMinutes,
                     label = "Snoozed: $alarmLabel"
                 )
                 AlarmScheduler.scheduleAlarm(context, snoozeItem)

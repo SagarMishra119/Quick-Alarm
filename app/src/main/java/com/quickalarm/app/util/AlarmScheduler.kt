@@ -7,12 +7,9 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import android.media.AudioAttributes
-import android.media.RingtoneManager
 import android.os.Build
 import android.provider.Settings
 import androidx.core.app.NotificationCompat
-import com.quickalarm.app.AlarmActivity
 import com.quickalarm.app.AlarmReceiver
 import com.quickalarm.app.MainActivity
 import com.quickalarm.app.R
@@ -24,7 +21,7 @@ import java.util.Locale
 
 object AlarmScheduler {
 
-    const val CHANNEL_ID = "quick_alarm_channel"
+    const val CHANNEL_ID = "quick_alarm_channel_v2"
     private const val PREFS_NAME = "quick_alarm_prefs"
     private const val KEY_ALARMS = "saved_alarms"
 
@@ -74,7 +71,7 @@ object AlarmScheduler {
 
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
-                // Fallback to setAndAllowWhileIdle if exact permission not granted, or return false
+                // Fallback to setAndAllowWhileIdle if exact permission not granted
                 alarmManager.setAndAllowWhileIdle(
                     AlarmManager.RTC_WAKEUP,
                     alarmItem.triggerTimeMillis,
@@ -162,25 +159,22 @@ object AlarmScheduler {
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     }
 
+    /**
+     * Creates the notification channel for high-priority full-screen alarms.
+     * Sound on the notification channel is explicitly set to null to avoid dual-sound collision
+     * with AlarmActivity's looping MediaPlayer.
+     */
     fun createNotificationChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-                ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-
-            val audioAttributes = AudioAttributes.Builder()
-                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                .setUsage(AudioAttributes.USAGE_ALARM)
-                .build()
-
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 context.getString(R.string.channel_name),
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = context.getString(R.string.channel_description)
-                setSound(soundUri, audioAttributes)
-                enableVibration(true)
-                vibrationPattern = longArrayOf(0, 500, 500, 500, 500)
+                // Disable channel sound so AlarmActivity MediaPlayer is the single sound source
+                setSound(null, null)
+                enableVibration(false)
                 lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
             }
 
