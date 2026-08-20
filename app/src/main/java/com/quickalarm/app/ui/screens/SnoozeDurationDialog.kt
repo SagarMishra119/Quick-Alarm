@@ -161,59 +161,72 @@ fun SnoozeDurationDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Custom Interval Header
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "CUSTOM INTERVAL",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = colors.textMuted,
-                        letterSpacing = 1.sp
-                    )
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "CUSTOM INTERVAL",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = colors.textMuted,
+                            letterSpacing = 1.sp
+                        )
+                        Text(
+                            text = "$selectedMinutes mins",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = AccentAmber
+                        )
+                    }
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Button(
                             onClick = { selectedMinutes = (selectedMinutes - 5).coerceAtLeast(1) },
+                            modifier = Modifier.weight(1f).height(32.dp),
                             shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
-                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
-                            modifier = Modifier.height(26.dp)
+                            contentPadding = PaddingValues(0.dp)
                         ) {
-                            Text("-5m", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                            Text("-5m", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                         }
 
                         Button(
                             onClick = { selectedMinutes = (selectedMinutes - 1).coerceAtLeast(1) },
+                            modifier = Modifier.weight(1f).height(32.dp),
                             shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
-                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
-                            modifier = Modifier.height(26.dp)
+                            contentPadding = PaddingValues(0.dp)
                         ) {
-                            Text("-1m", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                            Text("-1m", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                         }
 
                         Button(
                             onClick = { selectedMinutes = (selectedMinutes + 1).coerceAtMost(60) },
+                            modifier = Modifier.weight(1f).height(32.dp),
                             shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
-                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
-                            modifier = Modifier.height(26.dp)
+                            contentPadding = PaddingValues(0.dp)
                         ) {
-                            Text("+1m", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                            Text("+1m", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                         }
 
                         Button(
                             onClick = { selectedMinutes = (selectedMinutes + 5).coerceAtMost(60) },
+                            modifier = Modifier.weight(1f).height(32.dp),
                             shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
-                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
-                            modifier = Modifier.height(26.dp)
+                            contentPadding = PaddingValues(0.dp)
                         ) {
-                            Text("+5m", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                            Text("+5m", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                         }
                     }
                 }

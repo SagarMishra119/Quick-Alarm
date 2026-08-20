@@ -48,13 +48,36 @@ fun SavedAlarmDialog(
     var hour12 by remember { mutableIntStateOf(initialHour12) }
     var minute by remember { mutableIntStateOf(initialMinute) }
     var isPm by remember { mutableStateOf(initialIsPm) }
-    var label by remember { mutableStateOf(alarmToEdit?.label ?: "Morning Alarm") }
+
+    // Helper for automatic time of day labeling
+    fun getTimeOfDayLabel(h24: Int): String {
+        return when (h24) {
+            in 0..4 -> "Late Night Alarm"
+            in 5..7 -> "Early Morning Alarm"
+            in 8..11 -> "Morning Alarm"
+            in 12..16 -> "Afternoon Alarm"
+            in 17..20 -> "Evening Alarm"
+            else -> "Night Alarm"
+        }
+    }
 
     // Convert 12-hour + AM/PM back to 24-hour
     val hour24 = when {
         isPm && hour12 < 12 -> hour12 + 12
         !isPm && hour12 == 12 -> 0
         else -> hour12
+    }
+
+    var userHasCustomizedLabel by remember { mutableStateOf(alarmToEdit != null) }
+    var label by remember {
+        mutableStateOf(alarmToEdit?.label ?: getTimeOfDayLabel(hour24))
+    }
+
+    // Auto-update label when time changes unless user typed a custom label
+    LaunchedEffect(hour24) {
+        if (!userHasCustomizedLabel) {
+            label = getTimeOfDayLabel(hour24)
+        }
     }
 
     val tempAlarm = SavedAlarmItem(
@@ -74,7 +97,7 @@ fun SavedAlarmDialog(
         Card(
             modifier = Modifier
                 .fillMaxWidth(0.92f)
-                .heightIn(max = 580.dp)
+                .heightIn(max = 600.dp)
                 .padding(vertical = 12.dp),
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = colors.surface),
@@ -92,7 +115,10 @@ fun SavedAlarmDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Box(
                             modifier = Modifier
                                 .size(36.dp)
@@ -111,7 +137,8 @@ fun SavedAlarmDialog(
                             text = if (isEditing) "Edit Saved Alarm" else "New Saved Alarm",
                             fontSize = 19.sp,
                             fontWeight = FontWeight.Bold,
-                            color = colors.textPrimary
+                            color = colors.textPrimary,
+                            maxLines = 1
                         )
                     }
                     IconButton(
@@ -141,8 +168,9 @@ fun SavedAlarmDialog(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = "Scheduled Alarm Time",
-                            fontSize = 11.sp,
+                            text = getTimeOfDayLabel(hour24),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
                             color = if (colors.isDark) Color(0xFFA7F3D0) else Color(0xFF065F46)
                         )
                         Spacer(modifier = Modifier.height(2.dp))
@@ -207,25 +235,42 @@ fun SavedAlarmDialog(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Hours Selector (1 - 12)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(text = "Hour: $hour12", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        IconButton(
+                // Hours Selector (1 - 12) with Zero Overlap Layout
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = "Hour", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                        Text(text = "$hour12 ${if (isPm) "PM" else "AM"}", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = AccentEmerald)
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Button(
                             onClick = { hour12 = if (hour12 > 1) hour12 - 1 else 12 },
-                            modifier = Modifier.size(30.dp).background(colors.chipBackground, CircleShape)
+                            modifier = Modifier.weight(1f).height(32.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
+                            contentPadding = PaddingValues(0.dp)
                         ) {
-                            Icon(Icons.Default.Remove, contentDescription = "-1 hr", tint = colors.textPrimary, modifier = Modifier.size(16.dp))
+                            Text("-1h", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                         }
-                        IconButton(
+
+                        Button(
                             onClick = { hour12 = if (hour12 < 12) hour12 + 1 else 1 },
-                            modifier = Modifier.size(30.dp).background(colors.chipBackground, CircleShape)
+                            modifier = Modifier.weight(1f).height(32.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
+                            contentPadding = PaddingValues(0.dp)
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = "+1 hr", tint = colors.textPrimary, modifier = Modifier.size(16.dp))
+                            Text("+1h", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                         }
                     }
                 }
@@ -244,52 +289,62 @@ fun SavedAlarmDialog(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Minutes Selector (0 - 59)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(text = "Minute: ${String.format("%02d", minute)}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                // Minutes Selector (0 - 59) with Zero Overlap Layout
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = "Minute", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                        Text(text = String.format("%02d mins", minute), fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = SecondaryCyan)
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Button(
                             onClick = { minute = (minute - 5 + 60) % 60 },
+                            modifier = Modifier.weight(1f).height(32.dp),
                             shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                            modifier = Modifier.height(28.dp)
+                            contentPadding = PaddingValues(0.dp)
                         ) {
-                            Text("-5", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                            Text("-5m", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                         }
 
                         Button(
                             onClick = { minute = (minute - 1 + 60) % 60 },
+                            modifier = Modifier.weight(1f).height(32.dp),
                             shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                            modifier = Modifier.height(28.dp)
+                            contentPadding = PaddingValues(0.dp)
                         ) {
-                            Text("-1", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                            Text("-1m", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                         }
 
                         Button(
                             onClick = { minute = (minute + 1) % 60 },
+                            modifier = Modifier.weight(1f).height(32.dp),
                             shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                            modifier = Modifier.height(28.dp)
+                            contentPadding = PaddingValues(0.dp)
                         ) {
-                            Text("+1", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                            Text("+1m", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                         }
 
                         Button(
                             onClick = { minute = (minute + 5) % 60 },
+                            modifier = Modifier.weight(1f).height(32.dp),
                             shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                            modifier = Modifier.height(28.dp)
+                            contentPadding = PaddingValues(0.dp)
                         ) {
-                            Text("+5", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                            Text("+5m", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                         }
                     }
                 }
@@ -308,11 +363,24 @@ fun SavedAlarmDialog(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Label Input
+                // Label Input with dynamic time-of-day suggestion
                 OutlinedTextField(
                     value = label,
-                    onValueChange = { label = it },
-                    label = { Text("Alarm Label (e.g. Wake Up, Gym, Medicine)") },
+                    onValueChange = {
+                        label = it
+                        userHasCustomizedLabel = true
+                    },
+                    label = { Text("Alarm Label") },
+                    trailingIcon = {
+                        if (userHasCustomizedLabel) {
+                            IconButton(onClick = {
+                                userHasCustomizedLabel = false
+                                label = getTimeOfDayLabel(hour24)
+                            }) {
+                                Icon(Icons.Default.Sync, contentDescription = "Auto Label", tint = AccentEmerald)
+                            }
+                        }
+                    },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -328,7 +396,7 @@ fun SavedAlarmDialog(
                 // Save Button
                 Button(
                     onClick = {
-                        val finalLabel = label.ifBlank { "Alarm ${tempAlarm.getFormattedTime()}" }
+                        val finalLabel = label.ifBlank { getTimeOfDayLabel(hour24) }
                         val saved = SavedAlarmItem(
                             id = alarmToEdit?.id ?: System.currentTimeMillis(),
                             hour = hour24,

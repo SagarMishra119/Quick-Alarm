@@ -4,49 +4,26 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.media.AudioAttributes
-import android.media.MediaPlayer
-import android.media.RingtoneManager
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.VibrationEffect
-import android.os.Vibrator
-import android.os.VibratorManager
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Alarm
-import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Snooze
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
@@ -56,19 +33,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.quickalarm.app.model.AlarmItem
+import androidx.core.content.ContextCompat
 import com.quickalarm.app.ui.theme.QuickAlarmTheme
 import com.quickalarm.app.util.AlarmScheduler
 import com.quickalarm.app.util.AppSettings
 
 class AlarmActivity : ComponentActivity() {
 
-    private var mediaPlayer: MediaPlayer? = null
-    private var vibrator: Vibrator? = null
-
     private val stopReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            stopAlarmSoundAndVibration()
             finish()
         }
     }
@@ -92,9 +65,25 @@ class AlarmActivity : ComponentActivity() {
 
         val alarmId = intent.getLongExtra("ALARM_ID", -1L)
         val alarmLabel = intent.getStringExtra("ALARM_LABEL") ?: "Quick Alarm"
-        val snoozeMinutes = AppSettings.getSnoozeMinutes(this)
+        val defaultSnoozeMinutes = AppSettings.getSnoozeMinutes(this)
 
-        startAlarmSoundAndVibration()
+        // Ensure AlarmSoundService is ringing (Single Source Audio Engine)
+        if (!AlarmSoundService.isRinging) {
+            val serviceIntent = Intent(this, AlarmSoundService::class.java).apply {
+                action = AlarmSoundService.ACTION_START_ALARM
+                putExtra("ALARM_ID", alarmId)
+                putExtra("ALARM_LABEL", alarmLabel)
+            }
+            try {
+                ContextCompat.startForegroundService(this, serviceIntent)
+            } catch (e: Exception) {
+                try {
+                    startService(serviceIntent)
+                } catch (ex: Exception) {
+                    ex.printStackTrace()
+                }
+            }
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(stopReceiver, IntentFilter("com.quickalarm.app.STOP_RINGTONE"), RECEIVER_NOT_EXPORTED)
@@ -106,27 +95,27 @@ class AlarmActivity : ComponentActivity() {
             QuickAlarmTheme {
                 AlarmRingingScreen(
                     label = alarmLabel,
-                    snoozeMinutes = snoozeMinutes,
+                    snoozeMinutes = defaultSnoozeMinutes,
                     onDismiss = {
-                        stopAlarmSoundAndVibration()
+                        val stopIntent = Intent(this@AlarmActivity, AlarmSoundService::class.java).apply {
+                            action = AlarmSoundService.ACTION_STOP_ALARM
+                        }
+                        startService(stopIntent)
                         if (alarmId != -1L) {
                             AlarmScheduler.removeAlarm(this@AlarmActivity, alarmId)
                         }
                         finish()
                     },
                     onSnooze = { minutesToSnooze ->
-                        stopAlarmSoundAndVibration()
+                        val snoozeIntent = Intent(this@AlarmActivity, AlarmSoundService::class.java).apply {
+                            action = AlarmSoundService.ACTION_SNOOZE_ALARM
+                            putExtra("ALARM_LABEL", alarmLabel)
+                            putExtra("SNOOZE_MINUTES", minutesToSnooze)
+                        }
+                        startService(snoozeIntent)
                         if (alarmId != -1L) {
                             AlarmScheduler.removeAlarm(this@AlarmActivity, alarmId)
                         }
-                        // Schedule customized snooze
-                        val snoozeItem = AlarmItem(
-                            id = System.currentTimeMillis(),
-                            triggerTimeMillis = System.currentTimeMillis() + (minutesToSnooze * 60 * 1000L),
-                            durationMinutes = minutesToSnooze,
-                            label = "Snoozed: $alarmLabel"
-                        )
-                        AlarmScheduler.scheduleAlarm(this@AlarmActivity, snoozeItem)
                         finish()
                     }
                 )
@@ -134,71 +123,13 @@ class AlarmActivity : ComponentActivity() {
         }
     }
 
-    private fun startAlarmSoundAndVibration() {
-        try {
-            val selectedSound = AppSettings.getSelectedSound(this)
-            val soundUri = selectedSound.getUri(this) ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-
-            mediaPlayer = MediaPlayer().apply {
-                try {
-                    setDataSource(this@AlarmActivity, soundUri)
-                } catch (e: Exception) {
-                    // Fallback to default alarm sound if custom sound failed
-                    val fallbackUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-                        ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-                    setDataSource(this@AlarmActivity, fallbackUri)
-                }
-                setAudioAttributes(
-                    AudioAttributes.Builder()
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                        .setUsage(AudioAttributes.USAGE_ALARM)
-                        .build()
-                )
-                isLooping = true
-                prepare()
-                start()
-            }
-
-            vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-                vibratorManager.defaultVibrator
-            } else {
-                @Suppress("DEPRECATION")
-                getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-            }
-
-            val pattern = longArrayOf(0, 500, 500)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator?.vibrate(VibrationEffect.createWaveform(pattern, 0))
-            } else {
-                @Suppress("DEPRECATION")
-                vibrator?.vibrate(pattern, 0)
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    private fun stopAlarmSoundAndVibration() {
-        try {
-            mediaPlayer?.stop()
-            mediaPlayer?.release()
-            mediaPlayer = null
-            vibrator?.cancel()
-            vibrator = null
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
     override fun onDestroy() {
-        super.onDestroy()
-        stopAlarmSoundAndVibration()
         try {
             unregisterReceiver(stopReceiver)
         } catch (e: Exception) {
-            // Ignored if not registered
+            // ignore
         }
+        super.onDestroy()
     }
 }
 
@@ -207,78 +138,109 @@ fun AlarmRingingScreen(
     label: String,
     snoozeMinutes: Int,
     onDismiss: () -> Unit,
-    onSnooze: (minutes: Int) -> Unit
+    onSnooze: (Int) -> Unit
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "PulseTransition")
-    val scale by infiniteTransition.animateFloat(
-        initialValue = 0.9f,
+    var selectedSnoozeOption by remember { mutableIntStateOf(snoozeMinutes) }
+    val snoozeOptions = listOf(5, 10, 15, 20, 30)
+
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
         targetValue = 1.15f,
         animationSpec = infiniteRepeatable(
             animation = tween(800, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "ScaleAnimation"
+        label = "pulseScale"
     )
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = Color(0xFF0F172A)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFF1E1B4B),
-                            Color(0xFF0F172A),
-                            Color(0xFF31103F)
-                        )
+    val glowAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.2f,
+        targetValue = 0.6f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "glowAlpha"
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF0F172A),
+                        Color(0xFF1E1B4B),
+                        Color(0xFF0F172A)
                     )
                 )
-                .padding(24.dp),
-            contentAlignment = Alignment.Center
+            )
+            .padding(24.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxHeight()
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Pulsing Alarm Icon
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.size(160.dp)
             ) {
-                // Pulsing Icon Container
+                // Outer glow
                 Box(
                     modifier = Modifier
-                        .scale(scale)
-                        .size(140.dp)
+                        .size(160.dp)
+                        .scale(pulseScale)
                         .background(
-                            brush = Brush.radialGradient(
-                                colors = listOf(Color(0xFFEC4899), Color(0xFF6366F1))
+                            Color(0xFF6366F1).copy(alpha = glowAlpha),
+                            CircleShape
+                        )
+                )
+
+                // Inner circle
+                Box(
+                    modifier = Modifier
+                        .size(110.dp)
+                        .background(
+                            brush = Brush.linearGradient(
+                                listOf(Color(0xFF6366F1), Color(0xFF06B6D4))
                             ),
                             shape = CircleShape
                         ),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.NotificationsActive,
+                        imageVector = Icons.Default.Alarm,
                         contentDescription = "Alarm Firing",
                         tint = Color.White,
-                        modifier = Modifier.size(72.dp)
+                        modifier = Modifier.size(54.dp)
                     )
                 }
+            }
 
-                Spacer(modifier = Modifier.height(36.dp))
-
+            // Alarm Labels
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            ) {
                 Text(
-                    text = "ALARM RINGING!",
-                    fontSize = 16.sp,
+                    text = "⏰ ALARM FIRING",
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFFF472B6),
-                    letterSpacing = 2.sp
+                    color = Color(0xFF06B6D4),
+                    letterSpacing = 3.sp
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
                     text = label,
-                    fontSize = 32.sp,
+                    fontSize = 28.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color.White,
                     textAlign = TextAlign.Center
@@ -287,77 +249,114 @@ fun AlarmRingingScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = AlarmScheduler.formatTime(System.currentTimeMillis()),
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Medium,
+                    text = "Time is up!",
+                    fontSize = 15.sp,
                     color = Color(0xFF94A3B8)
                 )
+            }
 
-                Spacer(modifier = Modifier.height(56.dp))
-
-                // Action Buttons
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Button(
-                        onClick = onDismiss,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(64.dp),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFEF4444)
-                        )
+            // Snooze Options & Action Buttons
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                // Snooze Interval Chips
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "Snooze Duration",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF94A3B8)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Alarm,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(28.dp)
-                            )
-                            Text(
-                                text = "DISMISS ALARM",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        }
-                    }
-
-                    Button(
-                        onClick = { onSnooze(snoozeMinutes) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF334155)
-                        )
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Snooze,
-                                contentDescription = null,
-                                tint = Color(0xFFCBD5E1)
-                            )
-                            Text(
-                                text = "Snooze (+$snoozeMinutes Min)",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color(0xFFCBD5E1)
-                            )
+                        items(snoozeOptions) { mins ->
+                            val isSelected = selectedSnoozeOption == mins
+                            Box(
+                                modifier = Modifier
+                                    .background(
+                                        if (isSelected) Color(0xFFF59E0B) else Color(0xFF1E293B),
+                                        RoundedCornerShape(12.dp)
+                                    )
+                                    .border(
+                                        1.dp,
+                                        if (isSelected) Color(0xFFF59E0B) else Color(0xFF334155),
+                                        RoundedCornerShape(12.dp)
+                                    )
+                                    .clickable { selectedSnoozeOption = mins }
+                                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "+${mins}m",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isSelected) Color.Black else Color.White
+                                )
+                            }
                         }
                     }
                 }
+
+                // Snooze Button
+                Button(
+                    onClick = { onSnooze(selectedSnoozeOption) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF1E293B)
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFF59E0B))
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Snooze,
+                        contentDescription = "Snooze",
+                        tint = Color(0xFFF59E0B),
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Snooze for $selectedSnoozeOption min",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFF59E0B)
+                    )
+                }
+
+                // Dismiss Button
+                Button(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(60.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFEF4444)
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Dismiss",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Dismiss Alarm",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White
+                    )
+                }
             }
+
+            Spacer(modifier = Modifier.height(10.dp))
         }
     }
 }

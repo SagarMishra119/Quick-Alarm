@@ -39,29 +39,36 @@ data class AppPalette(
     val customButtonBg: List<Color>
 )
 
-// Dark Palette (Noticeably Lighter Slate Background with High-Contrast Pure White Section Headers)
+// Dark Palette (Frosted Glass Surfaces Over Full Moon Night Sky)
 val DarkAppPalette = AppPalette(
     isDark = true,
-    background = Color(0xFF1E293B),
+    background = Color(0xFF0B0F19),
     backgroundGradient = listOf(
-        Color(0xFF293548), // Lighter slate top
-        Color(0xFF1E293B), // Mid soft slate
-        Color(0xFF141D2B)  // Comfortable dark bottom
+        Color(0xFF1E293B),
+        Color(0xFF111827),
+        Color(0xFF0B0F19)
     ),
-    surface = Color(0xFF243042),
-    surfaceBorder = Color(0xFF3E4D63),
-    cardBackground = Color(0xFF243042),
-    cardBackgroundElevated = Color(0xFF2C3B50),
-    sectionHeaderColor = Color(0xFFFFFFFF), // Crisp pure white for maximum header visibility
+    surface = Color(0xFF1E293B).copy(alpha = 0.85f),
+    surfaceBorder = Color(0xFF475569).copy(alpha = 0.55f),
+    cardBackground = Color(0xFF1E293B).copy(alpha = 0.88f),
+    cardBackgroundElevated = Color(0xFF263346).copy(alpha = 0.92f),
+    sectionHeaderColor = Color(0xFFFFFFFF), // Pure white for high contrast
     textPrimary = Color(0xFFF8FAFC),
     textSecondary = Color(0xFFCBD5E1),
     textMuted = Color(0xFF94A3B8),
-    chipBackground = Color(0xFF334155),
-    headerGradient = listOf(Color(0xFF2C3B50), Color(0xFF1E293B)),
-    customButtonBg = listOf(Color(0xFF2E266D), Color(0xFF1E293B), Color(0xFF243042))
+    chipBackground = Color(0xFF334155).copy(alpha = 0.85f),
+    headerGradient = listOf(
+        Color(0xFF1E293B).copy(alpha = 0.88f),
+        Color(0xFF0F172A).copy(alpha = 0.92f)
+    ),
+    customButtonBg = listOf(
+        Color(0xFF1E1B4B).copy(alpha = 0.92f),
+        Color(0xFF0F172A).copy(alpha = 0.88f),
+        Color(0xFF1E293B).copy(alpha = 0.92f)
+    )
 )
 
-// Light Palette (Vibrant Sky-Blue Gradient with High-Contrast Deep Slate Section Headers)
+// Light Palette (Early Morning Sunrise Sky Glow & Crisp High-Contrast Cards)
 val LightAppPalette = AppPalette(
     isDark = false,
     background = Color(0xFFF0F9FF),
@@ -70,17 +77,24 @@ val LightAppPalette = AppPalette(
         Color(0xFFE0F2FE), // Soft light blue middle
         Color(0xFFF0F9FF)  // Clean light blue-white bottom
     ),
-    surface = Color(0xFFFFFFFF),
+    surface = Color(0xFFFFFFFF).copy(alpha = 0.92f),
     surfaceBorder = Color(0xFFCBD5E1),
-    cardBackground = Color(0xFFFFFFFF),
-    cardBackgroundElevated = Color(0xFFF1F5F9),
-    sectionHeaderColor = Color(0xFF0F172A), // Bold deep slate for maximum visibility
+    cardBackground = Color(0xFFFFFFFF).copy(alpha = 0.95f),
+    cardBackgroundElevated = Color(0xFFF8FAFC),
+    sectionHeaderColor = Color(0xFF0F172A), // Bold deep slate for 100% visibility
     textPrimary = Color(0xFF0F172A),
     textSecondary = Color(0xFF334155),
     textMuted = Color(0xFF64748B),
     chipBackground = Color(0xFFE2E8F0),
-    headerGradient = listOf(Color(0xFFE0E7FF), Color(0xFFEEF2FF)),
-    customButtonBg = listOf(Color(0xFFE0E7FF), Color(0xFFF8FAFC), Color(0xFFE0E7FF))
+    headerGradient = listOf(
+        Color(0xFFFEF3C7).copy(alpha = 0.85f), // Soft golden morning sun glow
+        Color(0xFFE0F2FE).copy(alpha = 0.90f)  // Dawn sky blue
+    ),
+    customButtonBg = listOf(
+        Color(0xFFE0E7FF),
+        Color(0xFFF8FAFC),
+        Color(0xFFE0E7FF)
+    )
 )
 
 val LocalAppPalette = staticCompositionLocalOf { DarkAppPalette }

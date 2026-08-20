@@ -28,6 +28,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.quickalarm.app.ui.theme.*
 import com.quickalarm.app.util.AlarmScheduler
+import java.util.Calendar
 
 @Composable
 fun CustomDurationDialog(
@@ -43,17 +44,30 @@ fun CustomDurationDialog(
     val targetTimeMillis = System.currentTimeMillis() + (totalMinutes * 60 * 1000L)
     val scrollState = rememberScrollState()
 
+    // Automatic time of day calculation based on target alarm trigger time
+    fun getTimeOfDayPeriod(triggerMillis: Long): String {
+        val cal = Calendar.getInstance().apply { timeInMillis = triggerMillis }
+        return when (cal.get(Calendar.HOUR_OF_DAY)) {
+            in 0..4 -> "Late Night"
+            in 5..7 -> "Early Morning"
+            in 8..11 -> "Morning"
+            in 12..16 -> "Afternoon"
+            in 17..20 -> "Evening"
+            else -> "Night"
+        }
+    }
+
     val quickPresets = listOf(
-        Pair(5, "+5m"),
-        Pair(10, "+10m"),
-        Pair(15, "+15m"),
-        Pair(30, "+30m"),
-        Pair(45, "+45m"),
-        Pair(60, "+1h"),
-        Pair(90, "+1.5h"),
-        Pair(120, "+2h"),
-        Pair(180, "+3h"),
-        Pair(480, "+8h")
+        Pair(5, "5m"),
+        Pair(10, "10m"),
+        Pair(15, "15m"),
+        Pair(30, "30m"),
+        Pair(45, "45m"),
+        Pair(60, "1h"),
+        Pair(90, "1.5h"),
+        Pair(120, "2h"),
+        Pair(180, "3h"),
+        Pair(480, "8h")
     )
 
     Dialog(
@@ -76,13 +90,16 @@ fun CustomDurationDialog(
                     .padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Header Row
+                // Header Row (Clean: removed "+")
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Box(
                             modifier = Modifier
                                 .size(36.dp)
@@ -101,7 +118,8 @@ fun CustomDurationDialog(
                             text = "Custom Countdown Timer",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
-                            color = colors.textPrimary
+                            color = colors.textPrimary,
+                            maxLines = 1
                         )
                     }
                     IconButton(
@@ -118,7 +136,7 @@ fun CustomDurationDialog(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Target Time Preview Box
+                // Target Time Preview Box with Dynamic Time of Day Label
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -135,16 +153,17 @@ fun CustomDurationDialog(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = if (totalMinutes > 0) "Alarm will trigger at" else "Select duration",
+                            text = if (totalMinutes > 0) "${getTimeOfDayPeriod(targetTimeMillis)} Alarm at" else "Select duration",
                             fontSize = 12.sp,
-                            color = colors.textSecondary
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (colors.isDark) SecondaryCyan else PrimaryIndigo
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = if (totalMinutes > 0) AlarmScheduler.formatTime(targetTimeMillis) else "--:--",
-                            fontSize = 26.sp,
+                            fontSize = 28.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = if (colors.isDark) SecondaryCyan else PrimaryIndigo
+                            color = colors.textPrimary
                         )
                         if (totalMinutes > 0) {
                             Text(
@@ -161,7 +180,7 @@ fun CustomDurationDialog(
                 // Quick Presets Row
                 Text(
                     text = "QUICK JUMP",
-                    fontSize = 12.sp,
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = colors.textMuted,
                     letterSpacing = 1.sp,
@@ -195,31 +214,44 @@ fun CustomDurationDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Hours Picker Section
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(text = "Hours: $hours", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        IconButton(
+                // Hours Adjuster (Structured layout to prevent overlap)
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = "Hours", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                        Text(text = "${hours}h", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = PrimaryIndigo)
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Button(
                             onClick = { if (hours > 0) hours-- },
                             enabled = hours > 0,
-                            modifier = Modifier
-                                .size(30.dp)
-                                .background(colors.chipBackground, CircleShape)
+                            modifier = Modifier.weight(1f).height(32.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
+                            contentPadding = PaddingValues(0.dp)
                         ) {
-                            Icon(Icons.Default.Remove, contentDescription = "Minus Hr", tint = colors.textPrimary, modifier = Modifier.size(16.dp))
+                            Text("-1h", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                         }
-                        IconButton(
+
+                        Button(
                             onClick = { if (hours < 24) hours++ },
                             enabled = hours < 24,
-                            modifier = Modifier
-                                .size(30.dp)
-                                .background(colors.chipBackground, CircleShape)
+                            modifier = Modifier.weight(1f).height(32.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
+                            contentPadding = PaddingValues(0.dp)
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = "Plus Hr", tint = colors.textPrimary, modifier = Modifier.size(16.dp))
+                            Text("+1h", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                         }
                     }
                 }
@@ -238,56 +270,66 @@ fun CustomDurationDialog(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Minutes Picker Section (±1m, ±5m buttons and exact slider)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(text = "Minutes: $minutes", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                // Minutes Adjuster (Structured row prevents overlap!)
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = "Minutes", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                        Text(text = "$minutes mins", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = SecondaryCyan)
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Button(
                             onClick = { minutes = (minutes - 5).coerceAtLeast(0) },
                             enabled = minutes > 0 || hours > 0,
+                            modifier = Modifier.weight(1f).height(32.dp),
                             shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                            modifier = Modifier.height(28.dp)
+                            contentPadding = PaddingValues(0.dp)
                         ) {
-                            Text("-5", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                            Text("-5m", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                         }
 
                         Button(
                             onClick = { if (minutes > 0) minutes-- },
                             enabled = minutes > 0 || hours > 0,
+                            modifier = Modifier.weight(1f).height(32.dp),
                             shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                            modifier = Modifier.height(28.dp)
+                            contentPadding = PaddingValues(0.dp)
                         ) {
-                            Text("-1", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                            Text("-1m", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                         }
 
                         Button(
                             onClick = { if (minutes < 59) minutes++ },
                             enabled = minutes < 59,
+                            modifier = Modifier.weight(1f).height(32.dp),
                             shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                            modifier = Modifier.height(28.dp)
+                            contentPadding = PaddingValues(0.dp)
                         ) {
-                            Text("+1", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                            Text("+1m", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                         }
 
                         Button(
                             onClick = { minutes = (minutes + 5).coerceAtMost(59) },
                             enabled = minutes < 59,
+                            modifier = Modifier.weight(1f).height(32.dp),
                             shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                            modifier = Modifier.height(28.dp)
+                            contentPadding = PaddingValues(0.dp)
                         ) {
-                            Text("+5", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                            Text("+5m", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                         }
                     }
                 }
@@ -306,15 +348,17 @@ fun CustomDurationDialog(
 
                 Spacer(modifier = Modifier.height(18.dp))
 
-                // Action Button
+                // Action Button with Smart Time-of-Day Label
                 Button(
                     onClick = {
                         if (totalMinutes > 0) {
-                            val label = when {
-                                hours > 0 && minutes > 0 -> "+${hours}h ${minutes}m Countdown"
-                                hours > 0 -> "+${hours}h Countdown"
-                                else -> "+${minutes}m Countdown"
+                            val period = getTimeOfDayPeriod(targetTimeMillis)
+                            val durationText = when {
+                                hours > 0 && minutes > 0 -> "${hours}h ${minutes}m"
+                                hours > 0 -> "${hours}h"
+                                else -> "${minutes}m"
                             }
+                            val label = "$period ($durationText)"
                             onConfirm(totalMinutes, label)
                         }
                     },

@@ -95,7 +95,7 @@ fun PresetEditDialog(
         Card(
             modifier = Modifier
                 .fillMaxWidth(0.92f)
-                .heightIn(max = 580.dp)
+                .heightIn(max = 600.dp)
                 .padding(vertical = 12.dp),
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = colors.surface),
@@ -113,7 +113,10 @@ fun PresetEditDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Box(
                             modifier = Modifier
                                 .size(36.dp)
@@ -132,7 +135,8 @@ fun PresetEditDialog(
                             text = if (isEditing) "Edit Preset" else "Add New Preset",
                             fontSize = 19.sp,
                             fontWeight = FontWeight.Bold,
-                            color = colors.textPrimary
+                            color = colors.textPrimary,
+                            maxLines = 1
                         )
                     }
                     IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
@@ -160,27 +164,44 @@ fun PresetEditDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Hours Adjuster
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(text = "Hours: $hours", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        IconButton(
+                // Hours Adjuster (Zero Overlap Layout)
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = "Hours", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                        Text(text = "${hours}h", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = PrimaryIndigo)
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Button(
                             onClick = { if (hours > 0) onTimeChanged(hours - 1, minutes) },
                             enabled = hours > 0,
-                            modifier = Modifier.size(30.dp).background(colors.chipBackground, CircleShape)
+                            modifier = Modifier.weight(1f).height(32.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
+                            contentPadding = PaddingValues(0.dp)
                         ) {
-                            Icon(Icons.Default.Remove, contentDescription = "-1 hr", tint = colors.textPrimary, modifier = Modifier.size(16.dp))
+                            Text("-1h", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                         }
-                        IconButton(
+
+                        Button(
                             onClick = { if (hours < 24) onTimeChanged(hours + 1, minutes) },
                             enabled = hours < 24,
-                            modifier = Modifier.size(30.dp).background(colors.chipBackground, CircleShape)
+                            modifier = Modifier.weight(1f).height(32.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
+                            contentPadding = PaddingValues(0.dp)
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = "+1 hr", tint = colors.textPrimary, modifier = Modifier.size(16.dp))
+                            Text("+1h", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                         }
                     }
                 }
@@ -199,26 +220,36 @@ fun PresetEditDialog(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Minutes Adjuster (±1m, ±5m buttons and exact slider)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(text = "Minutes: $minutes", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                // Minutes Adjuster (Zero Overlap Layout)
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = "Minutes", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                        Text(text = "$minutes mins", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = SecondaryCyan)
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Button(
                             onClick = {
                                 val nextM = (minutes - 5).coerceAtLeast(0)
                                 if (nextM > 0 || hours > 0) onTimeChanged(hours, nextM)
                             },
                             enabled = minutes > 0 || hours > 0,
+                            modifier = Modifier.weight(1f).height(32.dp),
                             shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                            modifier = Modifier.height(28.dp)
+                            contentPadding = PaddingValues(0.dp)
                         ) {
-                            Text("-5", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                            Text("-5m", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                         }
 
                         Button(
@@ -226,12 +257,12 @@ fun PresetEditDialog(
                                 if (minutes > 0 || hours > 0) onTimeChanged(hours, (minutes - 1).coerceAtLeast(0))
                             },
                             enabled = minutes > 0 || hours > 0,
+                            modifier = Modifier.weight(1f).height(32.dp),
                             shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                            modifier = Modifier.height(28.dp)
+                            contentPadding = PaddingValues(0.dp)
                         ) {
-                            Text("-1", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                            Text("-1m", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                         }
 
                         Button(
@@ -239,12 +270,12 @@ fun PresetEditDialog(
                                 if (minutes < 59) onTimeChanged(hours, minutes + 1)
                             },
                             enabled = minutes < 59,
+                            modifier = Modifier.weight(1f).height(32.dp),
                             shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                            modifier = Modifier.height(28.dp)
+                            contentPadding = PaddingValues(0.dp)
                         ) {
-                            Text("+1", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                            Text("+1m", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                         }
 
                         Button(
@@ -253,12 +284,12 @@ fun PresetEditDialog(
                                 onTimeChanged(hours, nextM)
                             },
                             enabled = minutes < 59,
+                            modifier = Modifier.weight(1f).height(32.dp),
                             shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                            modifier = Modifier.height(28.dp)
+                            contentPadding = PaddingValues(0.dp)
                         ) {
-                            Text("+5", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                            Text("+5m", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                         }
                     }
                 }

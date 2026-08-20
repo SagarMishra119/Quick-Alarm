@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - Quick Alarm</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #1e293b;
+            background-color: #f8fafc;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        h1, h2 { color: #0f172a; }
+        h1 { border-bottom: 2px solid #e2e8f0; padding-bottom: 12px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
+        th { background-color: #f1f5f9; font-weight: 600; }
+        code { background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+        .badge { display: inline-block; padding: 4px 10px; background: #10b981; color: white; border-radius: 12px; font-size: 12px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h1>Privacy Policy for Quick Alarm</h1>
+    <p><strong>Last updated:</strong> August 20, 2026</p>
+    <p><span class="badge">100% Offline & Private</span></p>
+
+    <p><strong>Quick Alarm</strong> ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains our practices regarding data collection, usage, and disclosure for the <strong>Quick Alarm</strong> mobile application.</p>
+
+    <h2>1. 100% Offline Application</h2>
+    <p>Quick Alarm is designed from the ground up as a <strong>100% offline, standalone utility application</strong>.</p>
+    <ul>
+        <li>We do <strong>NOT</strong> require an account, email address, or login.</li>
+        <li>We do <strong>NOT</strong> collect, transmit, store, or sell any personal information.</li>
+        <li>We do <strong>NOT</strong> use any third-party tracking, analytics, or advertising SDKs.</li>
+        <li>We do <strong>NOT</strong> connect to external servers or transmit telemetry data over the internet.</li>
+    </ul>
+
+    <h2>2. Device Permissions Used & Purpose</h2>
+    <p>Quick Alarm requests minimal Android device permissions solely to provide its core alarm and quick-timer functionality:</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Permission</th>
+                <th>Purpose & Usage</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>SCHEDULE_EXACT_ALARM</code> / <code>USE_EXACT_ALARM</code></td>
+                <td>Required to wake the device and trigger alarms with exact precision at the user's requested time.</td>
+            </tr>
+            <tr>
+                <td><code>POST_NOTIFICATIONS</code></td>
+                <td>Required on Android 13+ to display heads-up notifications when an alarm fires and to provide "Dismiss" and "Snooze" action buttons.</td>
+            </tr>
+            <tr>
+                <td><code>FOREGROUND_SERVICE</code> / <code>FOREGROUND_SERVICE_MEDIA_PLAYBACK</code></td>
+                <td>Used exclusively to play the chosen alarm sound and vibration continuously when an alarm triggers, even if the application is in the background or the screen is locked.</td>
+            </tr>
+            <tr>
+                <td><code>VIBRATE</code></td>
+                <td>Provides haptic vibration feedback when an alarm triggers.</td>
+            </tr>
+            <tr>
+                <td><code>WAKE_LOCK</code> / <code>USE_FULL_SCREEN_INTENT</code></td>
+                <td>Allows the application to wake the screen and display the full-screen alarm ringing interface over the lock screen when an alarm fires.</td>
+            </tr>
+            <tr>
+                <td><code>RECEIVE_BOOT_COMPLETED</code></td>
+                <td>Allows the application to automatically restore and reschedule your active and saved alarms after your device reboots.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>3. Local Data Storage</h2>
+    <p>All user preferences (such as preset durations, custom alarm labels, selected ringtone preferences, and snooze intervals) are stored <strong>locally on your device</strong> using standard Android <code>SharedPreferences</code>. This data never leaves your device and is automatically erased if you uninstall the application.</p>
+
+    <h2>4. Children's Privacy</h2>
+    <p>Quick Alarm does not collect any personal data from anyone, including children under the age of 13.</p>
+
+    <h2>5. Changes to This Privacy Policy</h2>
+    <p>We may update our Privacy Policy from time to time. Any updates will be published on this page with a revised "Last updated" date.</p>
+
+    <h2>6. Contact Us</h2>
+    <p>If you have any questions or suggestions regarding this Privacy Policy, please contact the developer via GitHub:<br>
+    <a href="https://github.com/SagarMishra119/Quick-Alarm">https://github.com/SagarMishra119/Quick-Alarm</a></p>
+
+</body>
+</html>

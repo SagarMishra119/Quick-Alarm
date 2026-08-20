@@ -11,6 +11,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -29,12 +30,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import com.quickalarm.app.R
 import com.quickalarm.app.model.AlarmItem
 import com.quickalarm.app.model.PresetItem
 import com.quickalarm.app.model.SavedAlarmItem
@@ -51,13 +58,31 @@ import java.util.Locale
 fun MainScreen() {
     val context = LocalContext.current
     val colors = AppTheme.colors
+    val lifecycleOwner = LocalLifecycleOwner.current
 
-    // In-memory data states (event-driven, isolated from 1s tick for 120 FPS performance)
+    // In-memory data states
     var activeAlarms by remember { mutableStateOf(AlarmScheduler.getActiveAlarms(context)) }
     var presets by remember { mutableStateOf(AppSettings.getPresets(context)) }
     var savedAlarms by remember { mutableStateOf(AppSettings.getSavedAlarms(context)) }
     var selectedSound by remember { mutableStateOf(AppSettings.getSelectedSound(context)) }
     var snoozeMinutes by remember { mutableIntStateOf(AppSettings.getSnoozeMinutes(context)) }
+
+    // Instant lifecycle refresh: reload alarms whenever MainActivity resumes (e.g. after snooze/dismiss)
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                activeAlarms = AlarmScheduler.getActiveAlarms(context)
+                savedAlarms = AppSettings.getSavedAlarms(context)
+                presets = AppSettings.getPresets(context)
+                selectedSound = AppSettings.getSelectedSound(context)
+                snoozeMinutes = AppSettings.getSnoozeMinutes(context)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     // Confirmation banner state
     var lastScheduledAlarm by remember { mutableStateOf<AlarmItem?>(null) }
@@ -95,14 +120,17 @@ fun MainScreen() {
         }
     }
 
-    // Isolated background cleanup: periodically removes expired alarms from in-memory list
+    // Background sync: automatically updates active alarms list if modified outside MainScreen (e.g. Snooze from notification)
     LaunchedEffect(Unit) {
         while (true) {
-            delay(5000)
-            val now = System.currentTimeMillis()
-            val unexpired = activeAlarms.filter { it.triggerTimeMillis > now - 60_000 }
-            if (unexpired.size != activeAlarms.size) {
-                activeAlarms = unexpired
+            delay(1500)
+            val freshAlarms = AlarmScheduler.getActiveAlarms(context)
+            if (freshAlarms != activeAlarms) {
+                activeAlarms = freshAlarms
+            }
+            val freshSaved = AppSettings.getSavedAlarms(context)
+            if (freshSaved != savedAlarms) {
+                savedAlarms = freshSaved
             }
         }
     }
@@ -177,10 +205,51 @@ fun MainScreen() {
     }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Brush.verticalGradient(colors.backgroundGradient))
+        modifier = Modifier.fillMaxSize()
     ) {
+        // --- 1. AESTHETIC THEMED BACKGROUND ---
+        if (colors.isDark) {
+            // Dark Mode: Full Moon, Starry Night Sky Wallpaper + Dark Scrim for 100% UI Clarity
+            Image(
+                painter = painterResource(id = R.drawable.bg_dark_mode),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFF070B14).copy(alpha = 0.45f))
+            )
+        } else {
+            // Light Mode: Vibrant Sky-Blue Gradient + Soft Morning Sun Glow
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Brush.verticalGradient(colors.backgroundGradient))
+            )
+
+            // Early Morning Sunrise Sun Orb Glow
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .size(240.dp)
+                    .offset(x = 60.dp, y = (-40).dp)
+                    .background(
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                Color(0xFFFDE047).copy(alpha = 0.50f),
+                                Color(0xFFFBBF24).copy(alpha = 0.25f),
+                                Color(0xFFBAE6FD).copy(alpha = 0.05f),
+                                Color.Transparent
+                            )
+                        ),
+                        shape = CircleShape
+                    )
+            )
+        }
+
+        // --- 2. FOREGROUND APP CONTENT ---
         Scaffold(
             containerColor = Color.Transparent
         ) { paddingValues ->
@@ -193,12 +262,12 @@ fun MainScreen() {
             ) {
                 item { Spacer(modifier = Modifier.height(6.dp)) }
 
-                // 1. Top Header & Live Clock with v3.3 Badge (Isolated Recomposition!)
+                // Top Header & Live Clock with v3.4 Badge (Clean, No "100% Offline" clutter)
                 item {
                     HeaderClockSection()
                 }
 
-                // 2. Permissions Banners (if needed)
+                // Permissions Banners (if needed)
                 if (!hasNotificationPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     item {
                         NotificationPermissionBanner(
@@ -220,7 +289,7 @@ fun MainScreen() {
                     }
                 }
 
-                // 3. Success Scheduled Banner
+                // Success Scheduled Banner
                 item {
                     AnimatedVisibility(
                         visible = showSuccessBanner && lastScheduledAlarm != null,
@@ -236,7 +305,7 @@ fun MainScreen() {
                     }
                 }
 
-                // 4. ACTIVE ALARMS SECTION
+                // ACTIVE ALARMS SECTION
                 item {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -296,7 +365,7 @@ fun MainScreen() {
                     }
                 }
 
-                // 5. SAVED CLOCK ALARMS SECTION (Fixed daily times, e.g. 7:00 AM)
+                // SAVED CLOCK ALARMS SECTION (Fixed daily times, e.g. 7:00 AM)
                 item {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -381,7 +450,7 @@ fun MainScreen() {
                     }
                 }
 
-                // 6. ONE-TAP PRESETS SECTION (Darker, high-visibility header)
+                // ONE-TAP PRESETS SECTION
                 item {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -432,7 +501,7 @@ fun MainScreen() {
                     }
                 }
 
-                // Grid of One-Tap Presets
+                // Grid of One-Tap Presets (Clean single alarm icon & no overlap)
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         for (row in presets.chunked(2)) {
@@ -457,12 +526,12 @@ fun MainScreen() {
                     }
                 }
 
-                // 7. Custom Countdown Timer Button
+                // Custom Countdown Timer Button (Clean: removed "+" symbol)
                 item {
                     CustomCountdownButton(onClick = { showCustomDialog = true })
                 }
 
-                // 8. PREFERENCES SECTION (Darker, high-visibility header)
+                // PREFERENCES SECTION (High-visibility header)
                 item {
                     Text(
                         text = "PREFERENCES & SETTINGS",
@@ -551,7 +620,6 @@ fun MainScreen() {
                 onPresetsChanged = { updatedList ->
                     presets = updatedList
                     AppSettings.savePresets(context, updatedList)
-                    com.quickalarm.app.widget.QuickAlarmWidgetProvider.updateAllWidgets(context)
                 },
                 onAddNewPreset = {
                     presetToEdit = null
@@ -579,7 +647,6 @@ fun MainScreen() {
                         AppSettings.addPreset(context, savedPreset)
                     }
                     presets = AppSettings.getPresets(context)
-                    com.quickalarm.app.widget.QuickAlarmWidgetProvider.updateAllWidgets(context)
                     showEditPresetDialog = false
                     presetToEdit = null
                     Toast.makeText(context, "Preset saved!", Toast.LENGTH_SHORT).show()
@@ -625,7 +692,7 @@ fun MainScreen() {
 
 /**
  * Isolated Clock Section:
- * Live ticker runs strictly inside this Composable with adaptive light/dark gradient.
+ * Live ticker runs strictly inside this Composable.
  */
 @Composable
 fun HeaderClockSection() {
@@ -655,68 +722,54 @@ fun HeaderClockSection() {
         Column {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(38.dp)
-                            .background(
-                                brush = Brush.linearGradient(listOf(PrimaryIndigo, SecondaryCyan)),
-                                shape = CircleShape
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Alarm,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "Quick Alarm",
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = colors.textPrimary
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Box(
-                                modifier = Modifier
-                                    .background(PrimaryIndigo, RoundedCornerShape(6.dp))
-                                    .padding(horizontal = 5.dp, vertical = 1.dp)
-                            ) {
-                                Text(
-                                    text = "v3.3",
-                                    fontSize = 9.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
-                            }
-                        }
-                        Text(
-                            text = "Instant Offline Alarms & Widget",
-                            fontSize = 11.sp,
-                            color = colors.textSecondary
-                        )
-                    }
-                }
-
                 Box(
                     modifier = Modifier
-                        .background(if (colors.isDark) Color(0xFF1E1B4B) else Color(0xFFE0E7FF), RoundedCornerShape(12.dp))
-                        .border(1.dp, if (colors.isDark) Color(0xFF4338CA) else Color(0xFFC7D2FE), RoundedCornerShape(12.dp))
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                        .size(42.dp)
+                        .background(
+                            brush = Brush.linearGradient(
+                                if (colors.isDark) listOf(PrimaryIndigo, SecondaryCyan)
+                                else listOf(AccentAmber, Color(0xFFF97316))
+                            ),
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
                 ) {
+                    Icon(
+                        imageVector = if (colors.isDark) Icons.Default.NightsStay else Icons.Default.WbSunny,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(14.dp))
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "Quick Alarm",
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = colors.textPrimary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .background(PrimaryIndigo, RoundedCornerShape(6.dp))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = "v3.4",
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+                    }
                     Text(
-                        text = "100% Offline",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (colors.isDark) Color(0xFFA5B4FC) else PrimaryIndigo
+                        text = if (colors.isDark) "Night Sky & Offline Alarms" else "Morning Sunrise & Offline Alarms",
+                        fontSize = 12.sp,
+                        color = colors.textSecondary
                     )
                 }
             }
@@ -732,7 +785,7 @@ fun HeaderClockSection() {
                 )
                 Text(
                     text = timeFormat.format(Date(currentTimeMillis)),
-                    fontSize = 32.sp,
+                    fontSize = 34.sp,
                     fontWeight = FontWeight.Bold,
                     color = if (colors.isDark) SecondaryCyan else Color(0xFF0284C7),
                     letterSpacing = 1.sp
@@ -758,7 +811,7 @@ fun SavedAlarmRowCard(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (saved.isEnabled) {
-                if (colors.isDark) Color(0xFF064E3B).copy(alpha = 0.35f) else Color(0xFFD1FAE5)
+                if (colors.isDark) Color(0xFF064E3B).copy(alpha = 0.55f) else Color(0xFFD1FAE5)
             } else colors.surface
         )
     ) {
@@ -767,7 +820,7 @@ fun SavedAlarmRowCard(
                 .fillMaxWidth()
                 .border(
                     width = 1.dp,
-                    color = if (saved.isEnabled) AccentEmerald.copy(alpha = 0.5f) else colors.surfaceBorder,
+                    color = if (saved.isEnabled) AccentEmerald.copy(alpha = 0.6f) else colors.surfaceBorder,
                     shape = RoundedCornerShape(16.dp)
                 )
                 .clickable { onEdit() }
@@ -870,10 +923,6 @@ fun EmptySavedAlarmsState(
     }
 }
 
-/**
- * PresetAlarmButton:
- * Clean, modern 1-tap alarm button with zero overlap and elegant single icon badge!
- */
 @Composable
 fun PresetAlarmButton(
     preset: PresetItem,
@@ -897,7 +946,7 @@ fun PresetAlarmButton(
                 .background(
                     brush = Brush.verticalGradient(
                         colors = listOf(
-                            gradient[0].copy(alpha = if (colors.isDark) 0.25f else 0.12f),
+                            gradient[0].copy(alpha = if (colors.isDark) 0.30f else 0.12f),
                             colors.surface
                         )
                     )
@@ -1027,10 +1076,6 @@ fun PreferenceCard(
     }
 }
 
-/**
- * Custom Countdown Timer Button:
- * Precision aligned with the preset cards grid.
- */
 @Composable
 fun CustomCountdownButton(
     onClick: () -> Unit
@@ -1091,14 +1136,14 @@ fun CustomCountdownButton(
                         verticalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = "+ Custom Countdown Timer",
+                            text = "Custom Countdown Timer",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
                             color = colors.textPrimary,
                             maxLines = 1
                         )
                         Text(
-                            text = "Set exact duration from now (e.g. +45m)",
+                            text = "Set exact duration from now (e.g. 45m)",
                             fontSize = 11.sp,
                             color = colors.textSecondary,
                             maxLines = 1
@@ -1111,7 +1156,7 @@ fun CustomCountdownButton(
                 Box(
                     modifier = Modifier
                         .background(
-                            if (colors.isDark) Color(0xFF334155) else Color(0xFFE0E7FF),
+                            if (colors.isDark) Color(0xFF334155).copy(alpha = 0.9f) else Color(0xFFE0E7FF),
                             RoundedCornerShape(10.dp)
                         )
                         .padding(horizontal = 12.dp, vertical = 6.dp),
@@ -1142,7 +1187,7 @@ fun ScheduledConfirmationCard(
             .shadow(8.dp, RoundedCornerShape(20.dp)),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (colors.isDark) Color(0xFF064E3B) else Color(0xFFD1FAE5)
+            containerColor = if (colors.isDark) Color(0xFF064E3B).copy(alpha = 0.85f) else Color(0xFFD1FAE5)
         )
     ) {
         Box(
@@ -1150,7 +1195,7 @@ fun ScheduledConfirmationCard(
                 .fillMaxWidth()
                 .background(
                     brush = Brush.horizontalGradient(
-                        if (colors.isDark) listOf(Color(0xFF064E3B), Color(0xFF022C22))
+                        if (colors.isDark) listOf(Color(0xFF064E3B).copy(alpha = 0.9f), Color(0xFF022C22).copy(alpha = 0.9f))
                         else listOf(Color(0xFFD1FAE5), Color(0xFFA7F3D0))
                     )
                 )
@@ -1195,11 +1240,6 @@ fun ScheduledConfirmationCard(
     }
 }
 
-/**
- * Isolated Active Alarm Card:
- * Has its own internal 1s ticker so the countdown ("14m 20s remaining") updates
- * without triggering a recomposition of the rest of MainScreen!
- */
 @Composable
 fun ActiveAlarmCard(
     alarm: AlarmItem,
