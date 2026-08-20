@@ -13,19 +13,7 @@ data class PresetItem(
     val colorKey: String = "indigo"
 ) {
     fun getGradient(): List<Color> {
-        return when (colorKey) {
-            "indigo" -> GradientPreset15m
-            "cyan" -> GradientPreset30m
-            "emerald" -> GradientPreset1h
-            "amber" -> GradientPreset2h
-            "purple" -> GradientPreset4h
-            "rose" -> GradientPreset6h
-            "pink" -> listOf(Color(0xFFEC4899), Color(0xFFBE185D))
-            "teal" -> listOf(Color(0xFF14B8A6), Color(0xFF0F766E))
-            "orange" -> listOf(Color(0xFFF97316), Color(0xFFC2410C))
-            "blue" -> listOf(Color(0xFF3B82F6), Color(0xFF1D4ED8))
-            else -> GradientPreset15m
-        }
+        return getGradientForKey(colorKey)
     }
 
     fun getPrimaryColor(): Color {
@@ -43,6 +31,22 @@ data class PresetItem(
     }
 
     companion object {
+        fun getGradientForKey(key: String): List<Color> {
+            return when (key) {
+                "indigo" -> GradientPreset15m
+                "cyan" -> GradientPreset30m
+                "emerald" -> GradientPreset1h
+                "amber" -> GradientPreset2h
+                "purple" -> GradientPreset4h
+                "rose" -> GradientPreset6h
+                "pink" -> listOf(Color(0xFFEC4899), Color(0xFFBE185D))
+                "teal" -> listOf(Color(0xFF14B8A6), Color(0xFF0F766E))
+                "orange" -> listOf(Color(0xFFF97316), Color(0xFFC2410C))
+                "blue" -> listOf(Color(0xFF3B82F6), Color(0xFF1D4ED8))
+                else -> GradientPreset15m
+            }
+        }
+
         fun fromJson(jsonStr: String): PresetItem? {
             return try {
                 val json = JSONObject(jsonStr)

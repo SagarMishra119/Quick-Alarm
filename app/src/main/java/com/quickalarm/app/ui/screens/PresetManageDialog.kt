@@ -32,7 +32,33 @@ fun PresetManageDialog(
     onAddNewPreset: () -> Unit,
     onEditPreset: (PresetItem) -> Unit
 ) {
-    var presetList by remember { mutableStateOf(presets) }
+    val colors = AppTheme.colors
+    var currentPresets by remember(presets) { mutableStateOf(presets) }
+
+    fun moveItem(fromIndex: Int, toIndex: Int) {
+        if (toIndex in currentPresets.indices) {
+            val list = currentPresets.toMutableList()
+            val item = list.removeAt(fromIndex)
+            list.add(toIndex, item)
+            currentPresets = list
+            onPresetsChanged(list)
+        }
+    }
+
+    fun deleteItem(index: Int) {
+        if (currentPresets.size > 1) { // Keep at least 1 preset
+            val list = currentPresets.toMutableList()
+            list.removeAt(index)
+            currentPresets = list
+            onPresetsChanged(list)
+        }
+    }
+
+    fun resetToDefaults() {
+        val defaults = PresetItem.getDefaultPresets()
+        currentPresets = defaults
+        onPresetsChanged(defaults)
+    }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -41,10 +67,10 @@ fun PresetManageDialog(
         Card(
             modifier = Modifier
                 .fillMaxWidth(0.92f)
-                .heightIn(min = 400.dp, max = 560.dp)
+                .heightIn(min = 420.dp, max = 580.dp)
                 .padding(vertical = 12.dp),
             shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = SurfaceCard),
+            colors = CardDefaults.cardColors(containerColor = colors.surface),
             elevation = CardDefaults.cardElevation(12.dp)
         ) {
             Column(
@@ -58,159 +84,144 @@ fun PresetManageDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
-                        Text(
-                            text = "Manage Presets",
-                            fontSize = 19.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = TextPrimary
-                        )
-                        Text(
-                            text = "${presetList.size}/${AppSettings.MAX_PRESETS} Presets configured",
-                            fontSize = 12.sp,
-                            color = TextSecondary
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(if (colors.isDark) Color(0xFF1E1B4B) else Color(0xFFEEF2FF), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Tune,
+                                contentDescription = null,
+                                tint = PrimaryIndigo,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = "Manage Quick Presets",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = colors.textPrimary
+                            )
+                            Text(
+                                text = "${currentPresets.size}/${AppSettings.MAX_PRESETS} Presets",
+                                fontSize = 11.sp,
+                                color = colors.textSecondary
+                            )
+                        }
                     }
-                    IconButton(
-                        onClick = onDismiss,
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(Icons.Default.Close, contentDescription = "Close", tint = TextSecondary)
+                    IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
+                        Icon(Icons.Default.Close, contentDescription = "Close", tint = colors.textSecondary)
                     }
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Scrollable Presets List with Up/Down reorder, Edit, Delete
+                // Scrollable Presets List (Bounded with weight(1f))
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    itemsIndexed(presetList, key = { _, item -> item.id }) { index, preset ->
+                    itemsIndexed(currentPresets, key = { _, item -> item.id }) { index, preset ->
+                        val gradient = preset.getGradient()
+
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(14.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A))
+                            colors = CardDefaults.cardColors(containerColor = colors.cardBackgroundElevated)
                         ) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .border(1.dp, SurfaceCardBorder, RoundedCornerShape(14.dp))
-                                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                                    .border(1.dp, colors.surfaceBorder, RoundedCornerShape(14.dp))
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                // Color Indicator + Title & Subtitle
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier.weight(1f)
                                 ) {
                                     Box(
                                         modifier = Modifier
-                                            .size(12.dp)
-                                            .background(preset.getPrimaryColor(), CircleShape)
+                                            .size(14.dp)
+                                            .background(gradient[0], CircleShape)
                                     )
-                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Spacer(modifier = Modifier.width(10.dp))
                                     Column {
                                         Text(
                                             text = preset.title,
                                             fontSize = 14.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = Color.White
+                                            color = colors.textPrimary
                                         )
                                         Text(
-                                            text = "${preset.subtitle} (${preset.minutes}m)",
+                                            text = "${preset.minutes} mins • ${preset.subtitle}",
                                             fontSize = 11.sp,
-                                            color = TextSecondary
+                                            color = colors.textSecondary
                                         )
                                     }
                                 }
 
-                                // Action Buttons: Move Up, Move Down, Edit, Delete
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(2.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                                 ) {
                                     // Move Up
                                     IconButton(
-                                        onClick = {
-                                            if (index > 0) {
-                                                val mutable = presetList.toMutableList()
-                                                val item = mutable.removeAt(index)
-                                                mutable.add(index - 1, item)
-                                                presetList = mutable
-                                                onPresetsChanged(mutable)
-                                            }
-                                        },
+                                        onClick = { moveItem(index, index - 1) },
                                         enabled = index > 0,
                                         modifier = Modifier.size(28.dp)
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Default.ArrowUpward,
+                                            Icons.Default.ArrowDropUp,
                                             contentDescription = "Move Up",
-                                            tint = if (index > 0) Color.White else Color.DarkGray,
-                                            modifier = Modifier.size(15.dp)
+                                            tint = if (index > 0) colors.textPrimary else colors.textMuted
                                         )
                                     }
 
                                     // Move Down
                                     IconButton(
-                                        onClick = {
-                                            if (index < presetList.size - 1) {
-                                                val mutable = presetList.toMutableList()
-                                                val item = mutable.removeAt(index)
-                                                mutable.add(index + 1, item)
-                                                presetList = mutable
-                                                onPresetsChanged(mutable)
-                                            }
-                                        },
-                                        enabled = index < presetList.size - 1,
+                                        onClick = { moveItem(index, index + 1) },
+                                        enabled = index < currentPresets.size - 1,
                                         modifier = Modifier.size(28.dp)
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Default.ArrowDownward,
+                                            Icons.Default.ArrowDropDown,
                                             contentDescription = "Move Down",
-                                            tint = if (index < presetList.size - 1) Color.White else Color.DarkGray,
-                                            modifier = Modifier.size(15.dp)
+                                            tint = if (index < currentPresets.size - 1) colors.textPrimary else colors.textMuted
                                         )
                                     }
 
-                                    // Edit
+                                    // Edit Button
                                     IconButton(
-                                        onClick = {
-                                            onDismiss()
-                                            onEditPreset(preset)
-                                        },
+                                        onClick = { onEditPreset(preset) },
                                         modifier = Modifier.size(28.dp)
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Default.Edit,
-                                            contentDescription = "Edit Preset",
+                                            Icons.Default.Edit,
+                                            contentDescription = "Edit",
                                             tint = SecondaryCyan,
-                                            modifier = Modifier.size(15.dp)
+                                            modifier = Modifier.size(16.dp)
                                         )
                                     }
 
-                                    // Delete
+                                    // Delete Button
                                     IconButton(
-                                        onClick = {
-                                            if (presetList.size > 1) {
-                                                val mutable = presetList.toMutableList()
-                                                mutable.removeAt(index)
-                                                presetList = mutable
-                                                onPresetsChanged(mutable)
-                                            }
-                                        },
-                                        enabled = presetList.size > 1,
+                                        onClick = { deleteItem(index) },
+                                        enabled = currentPresets.size > 1,
                                         modifier = Modifier.size(28.dp)
                                     ) {
                                         Icon(
-                                            imageVector = Icons.Default.Delete,
-                                            contentDescription = "Delete Preset",
-                                            tint = if (presetList.size > 1) Color(0xFFF87171) else Color.DarkGray,
-                                            modifier = Modifier.size(15.dp)
+                                            Icons.Default.Delete,
+                                            contentDescription = "Delete",
+                                            tint = if (currentPresets.size > 1) Color(0xFFEF4444) else colors.textMuted,
+                                            modifier = Modifier.size(16.dp)
                                         )
                                     }
                                 }
@@ -221,45 +232,39 @@ fun PresetManageDialog(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Pinned Bottom Action Buttons (Never cut off!)
+                // Pinned Bottom Actions Row (Always Visible!)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    if (presetList.size < AppSettings.MAX_PRESETS) {
-                        Button(
-                            onClick = {
-                                onDismiss()
-                                onAddNewPreset()
-                            },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(46.dp),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigo)
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Add Preset", fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                        }
-                    }
-
+                    // Reset Defaults Button
                     OutlinedButton(
-                        onClick = {
-                            val defaults = PresetItem.getDefaultPresets()
-                            presetList = defaults
-                            onPresetsChanged(defaults)
-                        },
+                        onClick = { resetToDefaults() },
                         modifier = Modifier
                             .weight(1f)
-                            .height(46.dp),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondary),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, SurfaceCardBorder)
+                            .height(44.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = colors.textSecondary
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, colors.surfaceBorder)
                     ) {
-                        Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Text("Reset", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    }
+
+                    // Add Preset Button
+                    Button(
+                        onClick = onAddNewPreset,
+                        enabled = currentPresets.size < AppSettings.MAX_PRESETS,
+                        modifier = Modifier
+                            .weight(1.5f)
+                            .height(44.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigo)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Reset Defaults", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        Text("+ Add Preset", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     }
                 }
             }

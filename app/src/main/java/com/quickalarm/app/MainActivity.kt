@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.quickalarm.app.ui.screens.MainScreen
-import com.quickalarm.app.ui.theme.DarkBackground
+import com.quickalarm.app.ui.theme.AppTheme
 import com.quickalarm.app.ui.theme.QuickAlarmTheme
 import com.quickalarm.app.util.AlarmScheduler
 
@@ -22,7 +22,7 @@ class MainActivity : ComponentActivity() {
             QuickAlarmTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = DarkBackground
+                    color = AppTheme.colors.background
                 ) {
                     MainScreen()
                 }

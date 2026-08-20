@@ -30,9 +30,10 @@ fun SavedAlarmDialog(
     onDismiss: () -> Unit,
     onSave: (SavedAlarmItem) -> Unit
 ) {
+    val colors = AppTheme.colors
     val isEditing = alarmToEdit != null
 
-    var initialHour12 = if (alarmToEdit != null) {
+    val initialHour12 = if (alarmToEdit != null) {
         val h = alarmToEdit.hour
         when {
             h == 0 -> 12
@@ -41,8 +42,8 @@ fun SavedAlarmDialog(
         }
     } else 7
 
-    var initialIsPm = if (alarmToEdit != null) alarmToEdit.hour >= 12 else false
-    var initialMinute = alarmToEdit?.minute ?: 0
+    val initialIsPm = if (alarmToEdit != null) alarmToEdit.hour >= 12 else false
+    val initialMinute = alarmToEdit?.minute ?: 0
 
     var hour12 by remember { mutableIntStateOf(initialHour12) }
     var minute by remember { mutableIntStateOf(initialMinute) }
@@ -76,7 +77,7 @@ fun SavedAlarmDialog(
                 .heightIn(max = 580.dp)
                 .padding(vertical = 12.dp),
             shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = SurfaceCard),
+            colors = CardDefaults.cardColors(containerColor = colors.surface),
             elevation = CardDefaults.cardElevation(12.dp)
         ) {
             Column(
@@ -95,13 +96,13 @@ fun SavedAlarmDialog(
                         Box(
                             modifier = Modifier
                                 .size(36.dp)
-                                .background(Color(0xFF064E3B), CircleShape),
+                                .background(if (colors.isDark) Color(0xFF064E3B) else Color(0xFFD1FAE5), CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.AccessTime,
                                 contentDescription = null,
-                                tint = AccentEmerald,
+                                tint = if (colors.isDark) AccentEmerald else Color(0xFF065F46),
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -110,14 +111,14 @@ fun SavedAlarmDialog(
                             text = if (isEditing) "Edit Saved Alarm" else "New Saved Alarm",
                             fontSize = 19.sp,
                             fontWeight = FontWeight.Bold,
-                            color = TextPrimary
+                            color = colors.textPrimary
                         )
                     }
                     IconButton(
                         onClick = onDismiss,
                         modifier = Modifier.size(32.dp)
                     ) {
-                        Icon(Icons.Default.Close, contentDescription = "Close", tint = TextSecondary)
+                        Icon(Icons.Default.Close, contentDescription = "Close", tint = colors.textSecondary)
                     }
                 }
 
@@ -129,7 +130,8 @@ fun SavedAlarmDialog(
                         .fillMaxWidth()
                         .background(
                             brush = Brush.horizontalGradient(
-                                colors = listOf(Color(0xFF064E3B), Color(0xFF0F2942))
+                                if (colors.isDark) listOf(Color(0xFF064E3B), Color(0xFF0F2942))
+                                else listOf(Color(0xFFD1FAE5), Color(0xFFA7F3D0))
                             ),
                             shape = RoundedCornerShape(16.dp)
                         )
@@ -141,14 +143,14 @@ fun SavedAlarmDialog(
                         Text(
                             text = "Scheduled Alarm Time",
                             fontSize = 11.sp,
-                            color = Color(0xFFA7F3D0)
+                            color = if (colors.isDark) Color(0xFFA7F3D0) else Color(0xFF065F46)
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = tempAlarm.getFormattedTime(),
                             fontSize = 32.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = AccentEmerald,
+                            color = if (colors.isDark) AccentEmerald else Color(0xFF047857),
                             letterSpacing = 1.sp
                         )
                     }
@@ -163,8 +165,8 @@ fun SavedAlarmDialog(
                 ) {
                     Row(
                         modifier = Modifier
-                            .background(Color(0xFF0F172A), RoundedCornerShape(12.dp))
-                            .border(1.dp, SurfaceCardBorder, RoundedCornerShape(12.dp))
+                            .background(colors.cardBackgroundElevated, RoundedCornerShape(12.dp))
+                            .border(1.dp, colors.surfaceBorder, RoundedCornerShape(12.dp))
                             .padding(4.dp)
                     ) {
                         Box(
@@ -180,7 +182,7 @@ fun SavedAlarmDialog(
                                 text = "AM",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (!isPm) Color.Black else TextSecondary
+                                color = if (!isPm) Color.White else colors.textSecondary
                             )
                         }
 
@@ -197,7 +199,7 @@ fun SavedAlarmDialog(
                                 text = "PM",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isPm) Color.Black else TextSecondary
+                                color = if (isPm) Color.White else colors.textSecondary
                             )
                         }
                     }
@@ -211,19 +213,19 @@ fun SavedAlarmDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(text = "Hour: $hour12", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                    Text(text = "Hour: $hour12", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         IconButton(
                             onClick = { hour12 = if (hour12 > 1) hour12 - 1 else 12 },
-                            modifier = Modifier.size(30.dp).background(Color(0xFF334155), CircleShape)
+                            modifier = Modifier.size(30.dp).background(colors.chipBackground, CircleShape)
                         ) {
-                            Icon(Icons.Default.Remove, contentDescription = "-1 hr", tint = Color.White, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Remove, contentDescription = "-1 hr", tint = colors.textPrimary, modifier = Modifier.size(16.dp))
                         }
                         IconButton(
                             onClick = { hour12 = if (hour12 < 12) hour12 + 1 else 1 },
-                            modifier = Modifier.size(30.dp).background(Color(0xFF334155), CircleShape)
+                            modifier = Modifier.size(30.dp).background(colors.chipBackground, CircleShape)
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = "+1 hr", tint = Color.White, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Add, contentDescription = "+1 hr", tint = colors.textPrimary, modifier = Modifier.size(16.dp))
                         }
                     }
                 }
@@ -236,7 +238,7 @@ fun SavedAlarmDialog(
                     colors = SliderDefaults.colors(
                         thumbColor = AccentEmerald,
                         activeTrackColor = AccentEmerald,
-                        inactiveTrackColor = Color(0xFF334155)
+                        inactiveTrackColor = colors.chipBackground
                     )
                 )
 
@@ -248,46 +250,46 @@ fun SavedAlarmDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(text = "Minute: ${String.format("%02d", minute)}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                    Text(text = "Minute: ${String.format("%02d", minute)}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         Button(
                             onClick = { minute = (minute - 5 + 60) % 60 },
                             shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155)),
+                            colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
                             modifier = Modifier.height(28.dp)
                         ) {
-                            Text("-5", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            Text("-5", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                         }
 
                         Button(
                             onClick = { minute = (minute - 1 + 60) % 60 },
                             shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155)),
+                            colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
                             modifier = Modifier.height(28.dp)
                         ) {
-                            Text("-1", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            Text("-1", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                         }
 
                         Button(
                             onClick = { minute = (minute + 1) % 60 },
                             shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155)),
+                            colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
                             modifier = Modifier.height(28.dp)
                         ) {
-                            Text("+1", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            Text("+1", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                         }
 
                         Button(
                             onClick = { minute = (minute + 5) % 60 },
                             shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155)),
+                            colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
                             modifier = Modifier.height(28.dp)
                         ) {
-                            Text("+5", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            Text("+5", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                         }
                     }
                 }
@@ -300,7 +302,7 @@ fun SavedAlarmDialog(
                     colors = SliderDefaults.colors(
                         thumbColor = SecondaryCyan,
                         activeTrackColor = SecondaryCyan,
-                        inactiveTrackColor = Color(0xFF334155)
+                        inactiveTrackColor = colors.chipBackground
                     )
                 )
 
@@ -315,9 +317,9 @@ fun SavedAlarmDialog(
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = AccentEmerald,
-                        unfocusedBorderColor = SurfaceCardBorder,
-                        focusedTextColor = TextPrimary,
-                        unfocusedTextColor = TextPrimary
+                        unfocusedBorderColor = colors.surfaceBorder,
+                        focusedTextColor = colors.textPrimary,
+                        unfocusedTextColor = colors.textPrimary
                     )
                 )
 
@@ -346,7 +348,7 @@ fun SavedAlarmDialog(
                         text = if (isEditing) "Update Saved Alarm" else "Save & Enable Alarm",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.Black
+                        color = Color.White
                     )
                 }
             }

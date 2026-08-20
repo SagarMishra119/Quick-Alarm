@@ -1,40 +1,39 @@
-# Quick Alarm v3.1
+# Quick Alarm v3.2
 
-A clean, modern, lightweight, and 100% offline Android alarm and quick-timer application built with **Kotlin** and **Jetpack Compose**. It allows users to set timers and alarms in a single tap with custom presets, stored fixed clock alarms, home screen widget, customizable alarm audio from device library, and configurable snooze intervals.
-
----
-
-## 📊 Version Comparison (v1.0 vs v2.0 vs v3.1)
-
-| Feature / Capability | Quick Alarm v1.0 | Quick Alarm v2.0 | Quick Alarm v3.1 (Latest) |
-| :--- | :--- | :--- | :--- |
-| **Interactive Home Widget** | ❌ None | ❌ None | **✅ 4x2 / 4x1 Home Screen Widget** (1-tap preset alarm scheduling + live status badge) |
-| **Saved Clock Alarms** | ❌ None | ❌ None | **✅ Up to 10 Saved Daily Alarms** (Empty by default, toggle switches, AM/PM time pickers) |
-| **Custom Countdown Timer** | Basic picker | Basic picker | **✅ Dedicated Relative Timer Button** (e.g. +45m from now with exact ±1m steppers & sliders) |
-| **Device Sound Library** | Default sound only | Single custom audio pick | **✅ Full OEM System Alarm Library** (Scans all phone ringtones asynchronously on background thread) |
-| **One-Tap Presets** | Fixed 6 presets | Customizable presets | **✅ Up to 10 Presets** with ±1m/±5m steppers, 0-59 sliders, dynamic titles & 10 theme colors |
-| **Performance / Lag Fix** | Basic | Periodic 1s disk I/O | **✅ 120 FPS Zero-Lag**: Isolated clock recomposition and non-blocking background sound loading |
-| **Stability & Key Safety** | Basic | Risk of key conflict | **✅ Bulletproof Namespaced Keys**: Completely eliminates list key collisions and startup crashes |
-| **Snooze Customization** | Fixed at 5 minutes | Basic modal | **✅ 1m–60m Stepper + Slider** with responsive scrollable layout |
-| **Audio Engine** | Dual-sound collision | Single-source audio | **✅ Silent Notification Channel + looper MediaPlayer** in `AlarmActivity` |
-| **Local Offline Storage** | In-memory only | Basic preferences | **✅ Robust `SharedPreferences`** with zero external network or Firebase dependencies |
+A clean, modern, lightweight, and 100% offline Android alarm and quick-timer application built with **Kotlin** and **Jetpack Compose**. It allows users to set timers and alarms in a single tap with custom presets, stored fixed clock alarms, home screen widget, customizable alarm audio from device library, dynamic Light & Dark mode adaptation, and configurable snooze intervals.
 
 ---
 
-## 🌟 What's New in v3.1
+## 📊 Version Comparison (v1.0 vs v2.0 vs v3.0 vs v3.2)
 
-- **🛡️ Crash Fix & Startup Resilience:**
-  - Resolved `LazyColumn` key collision between active alarms and saved fixed alarms.
-  - Namespaced all composable list keys (`"active_${id}"`, `"saved_${id}"`) to prevent any duplicate key exceptions.
-- **⚡ 120 FPS Smoothness & Zero-Lag:**
-  - Recomposition isolation: the live 1-second clock ticker now executes strictly inside `HeaderClockSection` without causing the whole `MainScreen` to recompose.
-  - Background audio loading: OEM system alarm tones are scanned asynchronously on `Dispatchers.IO`.
-- **🏷️ Clear Visual Distinction:**
-  - **Saved Clock Alarms:** Set a fixed daily clock time (e.g. `7:00 AM`, `11:00 PM`).
-  - **Custom Countdown Timer:** Set a relative duration starting from right now (e.g. `+45m`, `+1h 30m`).
-- **📱 Interactive Android Home Screen Widget (`QuickAlarmWidget`):**
-  - Instant one-tap alarms directly from your home screen.
-  - Tapping the widget header launches the full app.
+| Feature / Capability | Quick Alarm v1.0 | Quick Alarm v2.0 | Quick Alarm v3.0 | Quick Alarm v3.2 (Latest) |
+| :--- | :--- | :--- | :--- | :--- |
+| **System Light & Dark Mode** | Dark only | Dark only | Dark only | **✅ Dynamic System Adaptive**: Auto-switches between Soft Slate Dark & Clean Modern Light |
+| **Interactive Home Widget** | ❌ None | ❌ None | ✅ Added | **✅ 4x2 / 4x1 Home Screen Widget** (1-tap preset alarm scheduling + live status badge) |
+| **Saved Clock Alarms** | ❌ None | ❌ None | ✅ Added | **✅ Up to 10 Saved Daily Alarms** (Empty by default, toggle switches, AM/PM time pickers) |
+| **Custom Countdown Timer** | Basic picker | Basic picker | Basic button | **✅ Precision Aligned Button & Dialog** (e.g. +45m from now with exact ±1m steppers & sliders) |
+| **Device Sound Library** | Default sound only | Single custom pick | Synchronous query | **✅ Full OEM System Alarm Library** (Scans all phone ringtones asynchronously on background thread) |
+| **One-Tap Presets** | Fixed 6 presets | Customizable presets | Up to 10 presets | **✅ Up to 10 Presets** with ±1m/±5m steppers, 0-59 sliders, dynamic titles & 10 theme colors |
+| **Performance & Smoothness** | Basic | Periodic 1s disk I/O | Fixed ticker | **✅ 120 FPS Zero-Lag**: Isolated clock recomposition, zero main-thread I/O |
+| **List Key Safety** | Basic | Risk of conflict | Basic | **✅ Bulletproof Namespaced Keys**: Completely eliminates list key collisions and startup crashes |
+| **Audio Engine** | Dual-sound collision | Single-source audio | Single-source audio | **✅ Silent Notification Channel + looper MediaPlayer** in `AlarmActivity` |
+| **Local Offline Storage** | In-memory only | Basic preferences | SharedPreferences | **✅ Robust `SharedPreferences`** with zero external network or Firebase dependencies |
+
+---
+
+## 🌟 What's New in v3.2
+
+- **🌓 Dynamic System Light & Dark Mode Adaptation:**
+  - **Dark Mode:** Refined soft-slate palette (`#111827`), reducing eye strain and improving contrast.
+  - **Light Mode:** Modern crisp off-white background (`#F8FAFC`), elevated cards (`#FFFFFF`), and deep slate typography (`#0F172A`).
+  - Automatic status bar & navigation bar theme adaptation.
+- **📐 Precision Alignment for Custom Countdown Timer:**
+  - Standardized horizontal margins and internal text flex weighting so the `"Pick Timer"` badge aligns with the preset cards grid.
+- **🛡️ Crash Resilience & Key Isolation:**
+  - Namespaced list keys (`"active_${id}"`, `"saved_${id}"`) preventing duplicate key exceptions and startup failures.
+- **⚡ 120 FPS Zero-Lag Smoothness:**
+  - Isolated clock ticker recomposition inside `HeaderClockSection`.
+  - Non-blocking background sound loader on `Dispatchers.IO`.
 
 ---
 
@@ -49,17 +48,17 @@ app/src/main/java/com/quickalarm/app/
 │   └── SoundItem.kt              # OEM RingtoneManager scanner & audio URI holder
 ├── ui/
 │   ├── screens/
-│   │   ├── MainScreen.kt         # Zero-lag ticker, Saved Alarms list & Widget sync
-│   │   ├── SavedAlarmDialog.kt   # Modal AM/PM clock time picker for saved alarms
-│   │   ├── CustomDurationDialog.kt # Custom Countdown Timer dialog with 1m steppers & slider
-│   │   ├── SoundPickerDialog.kt  # Non-blocking async sound loader & preview player
-│   │   ├── SnoozeDurationDialog.kt # Snooze preset chips & 1-60m stepper slider
-│   │   ├── PresetManageDialog.kt # Reorder (up/down), edit, delete, and reset presets
-│   │   ├── PresetEditDialog.kt   # Dynamic title auto-sync, 1m/5m steppers & color picker
+│   │   ├── MainScreen.kt         # [UPDATED v3.2] Adaptive Light/Dark layout, aligned timer button
+│   │   ├── SavedAlarmDialog.kt   # [UPDATED v3.2] Modal AM/PM clock time picker for saved alarms
+│   │   ├── CustomDurationDialog.kt # [UPDATED v3.2] Aligned Custom Countdown Timer dialog
+│   │   ├── SoundPickerDialog.kt  # [UPDATED v3.2] Non-blocking async sound loader & preview player
+│   │   ├── SnoozeDurationDialog.kt # [UPDATED v3.2] Snooze preset chips & 1-60m stepper slider
+│   │   ├── PresetManageDialog.kt # [UPDATED v3.2] Reorder (up/down), edit, delete, and reset presets
+│   │   ├── PresetEditDialog.kt   # [UPDATED v3.2] Dynamic title auto-sync, 1m/5m steppers & color picker
 │   │   └── PermissionBanner.kt   # Android 13+ Notification & Exact Alarm permission cards
 │   └── theme/
-│       ├── Color.kt              # Color palettes & gradients
-│       ├── Theme.kt              # Material 3 dark theme setup
+│       ├── Color.kt              # [UPDATED v3.2] Adaptive DarkAppPalette & LightAppPalette
+│       ├── Theme.kt              # [UPDATED v3.2] Material 3 dynamic theme provider & status bar insets
 │       └── Type.kt               # Typography definitions
 ├── util/
 │   ├── AlarmScheduler.kt         # Silent notification channel + Exact AlarmManager logic
@@ -95,7 +94,7 @@ app/src/main/java/com/quickalarm/app/
   ./gradlew assembleDebug
   ```
 
-The generated APK is output at `QuickAlarmv3.1.apk` in the root directory and `app/build/outputs/apk/debug/app-debug.apk`.
+The generated APK is output at `QuickAlarmv3.2.apk` in the root directory and `app/build/outputs/apk/debug/app-debug.apk`.
 
 ---
 

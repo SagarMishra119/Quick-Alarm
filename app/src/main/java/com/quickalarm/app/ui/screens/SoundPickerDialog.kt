@@ -41,6 +41,8 @@ fun SoundPickerDialog(
     onSoundSelected: (SoundItem) -> Unit
 ) {
     val context = LocalContext.current
+    val colors = AppTheme.colors
+
     var selectedSound by remember { mutableStateOf(currentSound) }
     var playingSoundId by remember { mutableStateOf<String?>(null) }
     var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
@@ -156,7 +158,7 @@ fun SoundPickerDialog(
                 .heightIn(min = 400.dp, max = 580.dp)
                 .padding(vertical = 12.dp),
             shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = SurfaceCard),
+            colors = CardDefaults.cardColors(containerColor = colors.surface),
             elevation = CardDefaults.cardElevation(12.dp)
         ) {
             Column(
@@ -174,13 +176,13 @@ fun SoundPickerDialog(
                         Box(
                             modifier = Modifier
                                 .size(36.dp)
-                                .background(Color(0xFF0E7490), CircleShape),
+                                .background(if (colors.isDark) Color(0xFF0E7490) else Color(0xFFE0F2FE), CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.MusicNote,
                                 contentDescription = null,
-                                tint = SecondaryCyan,
+                                tint = if (colors.isDark) SecondaryCyan else Color(0xFF0284C7),
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -190,12 +192,12 @@ fun SoundPickerDialog(
                                 text = "Alarm Sound Library",
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = TextPrimary
+                                color = colors.textPrimary
                             )
                             Text(
                                 text = if (isLoadingSounds) "Loading sounds..." else "${installedSounds.size} Device Sounds Available",
                                 fontSize = 11.sp,
-                                color = TextSecondary
+                                color = colors.textSecondary
                             )
                         }
                     }
@@ -206,7 +208,7 @@ fun SoundPickerDialog(
                         },
                         modifier = Modifier.size(32.dp)
                     ) {
-                        Icon(Icons.Default.Close, contentDescription = "Close", tint = TextSecondary)
+                        Icon(Icons.Default.Close, contentDescription = "Close", tint = colors.textSecondary)
                     }
                 }
 
@@ -228,12 +230,12 @@ fun SoundPickerDialog(
                                     audioPickerLauncher.launch(arrayOf("audio/*"))
                                 },
                             shape = RoundedCornerShape(14.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A))
+                            colors = CardDefaults.cardColors(containerColor = colors.cardBackgroundElevated)
                         ) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .border(1.dp, Color(0xFF4338CA), RoundedCornerShape(14.dp))
+                                    .border(1.dp, PrimaryIndigo.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
                                     .padding(horizontal = 14.dp, vertical = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
@@ -242,7 +244,7 @@ fun SoundPickerDialog(
                                     Box(
                                         modifier = Modifier
                                             .size(32.dp)
-                                            .background(Color(0xFF312E81), CircleShape),
+                                            .background(if (colors.isDark) Color(0xFF312E81) else Color(0xFFE0E7FF), CircleShape),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
@@ -258,12 +260,12 @@ fun SoundPickerDialog(
                                             text = "+ Pick Audio File from Storage",
                                             fontSize = 13.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = Color.White
+                                            color = colors.textPrimary
                                         )
                                         Text(
                                             text = "MP3, WAV, FLAC, OGG, AAC",
                                             fontSize = 10.sp,
-                                            color = TextSecondary
+                                            color = colors.textSecondary
                                         )
                                     }
                                 }
@@ -299,7 +301,7 @@ fun SoundPickerDialog(
                             text = "SYSTEM & OEM ALARM TONES",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = TextMuted,
+                            color = colors.textMuted,
                             letterSpacing = 1.sp,
                             modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
                         )
@@ -361,13 +363,17 @@ fun SoundOptionRow(
     onSelect: () -> Unit,
     onTogglePlay: () -> Unit
 ) {
+    val colors = AppTheme.colors
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onSelect() },
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) Color(0xFF1E1B4B) else Color(0xFF0F172A)
+            containerColor = if (isSelected) {
+                if (colors.isDark) Color(0xFF1E1B4B) else Color(0xFFEEF2FF)
+            } else colors.cardBackgroundElevated
         )
     ) {
         Row(
@@ -375,7 +381,7 @@ fun SoundOptionRow(
                 .fillMaxWidth()
                 .border(
                     width = if (isSelected) 1.5.dp else 1.dp,
-                    color = if (isSelected) PrimaryIndigo else SurfaceCardBorder,
+                    color = if (isSelected) PrimaryIndigo else colors.surfaceBorder,
                     shape = RoundedCornerShape(14.dp)
                 )
                 .padding(horizontal = 12.dp, vertical = 8.dp),
@@ -391,7 +397,7 @@ fun SoundOptionRow(
                     onClick = onSelect,
                     colors = RadioButtonDefaults.colors(
                         selectedColor = PrimaryIndigo,
-                        unselectedColor = TextMuted
+                        unselectedColor = colors.textMuted
                     )
                 )
                 Spacer(modifier = Modifier.width(6.dp))
@@ -400,12 +406,12 @@ fun SoundOptionRow(
                         text = title,
                         fontSize = 13.sp,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        color = if (isSelected) Color.White else TextPrimary
+                        color = colors.textPrimary
                     )
                     Text(
                         text = subtitle,
                         fontSize = 10.sp,
-                        color = TextSecondary
+                        color = colors.textSecondary
                     )
                 }
             }
@@ -415,14 +421,15 @@ fun SoundOptionRow(
                 modifier = Modifier
                     .size(32.dp)
                     .background(
-                        if (isPlaying) Color(0xFF064E3B) else Color(0xFF334155),
+                        if (isPlaying) (if (colors.isDark) Color(0xFF064E3B) else Color(0xFFD1FAE5))
+                        else colors.chipBackground,
                         CircleShape
                     )
             ) {
                 Icon(
                     imageVector = if (isPlaying) Icons.Default.Stop else Icons.Default.PlayArrow,
                     contentDescription = if (isPlaying) "Stop Preview" else "Play Preview",
-                    tint = if (isPlaying) AccentEmerald else Color.White,
+                    tint = if (isPlaying) AccentEmerald else colors.textPrimary,
                     modifier = Modifier.size(18.dp)
                 )
             }

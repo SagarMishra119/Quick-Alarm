@@ -12,8 +12,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.HourglassTop
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -26,12 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.quickalarm.app.ui.theme.PrimaryIndigo
-import com.quickalarm.app.ui.theme.SecondaryCyan
-import com.quickalarm.app.ui.theme.SurfaceCard
-import com.quickalarm.app.ui.theme.TextMuted
-import com.quickalarm.app.ui.theme.TextPrimary
-import com.quickalarm.app.ui.theme.TextSecondary
+import com.quickalarm.app.ui.theme.*
 import com.quickalarm.app.util.AlarmScheduler
 
 @Composable
@@ -39,6 +34,8 @@ fun CustomDurationDialog(
     onDismiss: () -> Unit,
     onConfirm: (durationMinutes: Int, label: String) -> Unit
 ) {
+    val colors = AppTheme.colors
+
     var hours by remember { mutableIntStateOf(0) }
     var minutes by remember { mutableIntStateOf(45) }
 
@@ -69,7 +66,7 @@ fun CustomDurationDialog(
                 .heightIn(max = 600.dp)
                 .padding(vertical = 12.dp),
             shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = SurfaceCard),
+            colors = CardDefaults.cardColors(containerColor = colors.surface),
             elevation = CardDefaults.cardElevation(12.dp)
         ) {
             Column(
@@ -89,13 +86,13 @@ fun CustomDurationDialog(
                         Box(
                             modifier = Modifier
                                 .size(36.dp)
-                                .background(Color(0xFF1E1B4B), CircleShape),
+                                .background(if (colors.isDark) Color(0xFF1E1B4B) else Color(0xFFEEF2FF), CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Alarm,
+                                imageVector = Icons.Default.HourglassTop,
                                 contentDescription = null,
-                                tint = SecondaryCyan,
+                                tint = PrimaryIndigo,
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -104,7 +101,7 @@ fun CustomDurationDialog(
                             text = "Custom Countdown Timer",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
-                            color = TextPrimary
+                            color = colors.textPrimary
                         )
                     }
                     IconButton(
@@ -114,7 +111,7 @@ fun CustomDurationDialog(
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Close",
-                            tint = TextSecondary
+                            tint = colors.textSecondary
                         )
                     }
                 }
@@ -127,11 +124,12 @@ fun CustomDurationDialog(
                         .fillMaxWidth()
                         .background(
                             brush = Brush.horizontalGradient(
-                                colors = listOf(Color(0xFF1E1B4B), Color(0xFF0F2942))
+                                if (colors.isDark) listOf(Color(0xFF1E1B4B), Color(0xFF0F2942))
+                                else listOf(Color(0xFFEEF2FF), Color(0xFFE0F2FE))
                             ),
                             shape = RoundedCornerShape(16.dp)
                         )
-                        .border(1.dp, Color(0xFF3B82F6).copy(alpha = 0.3f), RoundedCornerShape(16.dp))
+                        .border(1.dp, PrimaryIndigo.copy(alpha = 0.3f), RoundedCornerShape(16.dp))
                         .padding(14.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -139,20 +137,20 @@ fun CustomDurationDialog(
                         Text(
                             text = if (totalMinutes > 0) "Alarm will trigger at" else "Select duration",
                             fontSize = 12.sp,
-                            color = TextSecondary
+                            color = colors.textSecondary
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = if (totalMinutes > 0) AlarmScheduler.formatTime(targetTimeMillis) else "--:--",
                             fontSize = 26.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = SecondaryCyan
+                            color = if (colors.isDark) SecondaryCyan else PrimaryIndigo
                         )
                         if (totalMinutes > 0) {
                             Text(
                                 text = "in ${if (hours > 0) "${hours}h " else ""}${minutes}m",
                                 fontSize = 13.sp,
-                                color = TextMuted
+                                color = colors.textMuted
                             )
                         }
                     }
@@ -165,7 +163,7 @@ fun CustomDurationDialog(
                     text = "QUICK JUMP",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TextMuted,
+                    color = colors.textMuted,
                     letterSpacing = 1.sp,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -178,7 +176,7 @@ fun CustomDurationDialog(
                     items(quickPresets) { preset ->
                         Box(
                             modifier = Modifier
-                                .background(Color(0xFF334155), RoundedCornerShape(12.dp))
+                                .background(colors.chipBackground, RoundedCornerShape(12.dp))
                                 .clickable {
                                     hours = preset.first / 60
                                     minutes = preset.first % 60
@@ -189,7 +187,7 @@ fun CustomDurationDialog(
                                 text = preset.second,
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = SecondaryCyan
+                                color = if (colors.isDark) SecondaryCyan else PrimaryIndigo
                             )
                         }
                     }
@@ -203,25 +201,25 @@ fun CustomDurationDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(text = "Hours: $hours", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                    Text(text = "Hours: $hours", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         IconButton(
                             onClick = { if (hours > 0) hours-- },
                             enabled = hours > 0,
                             modifier = Modifier
                                 .size(30.dp)
-                                .background(Color(0xFF334155), CircleShape)
+                                .background(colors.chipBackground, CircleShape)
                         ) {
-                            Icon(Icons.Default.Remove, contentDescription = "Minus Hr", tint = Color.White, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Remove, contentDescription = "Minus Hr", tint = colors.textPrimary, modifier = Modifier.size(16.dp))
                         }
                         IconButton(
                             onClick = { if (hours < 24) hours++ },
                             enabled = hours < 24,
                             modifier = Modifier
                                 .size(30.dp)
-                                .background(Color(0xFF334155), CircleShape)
+                                .background(colors.chipBackground, CircleShape)
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = "Plus Hr", tint = Color.White, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Add, contentDescription = "Plus Hr", tint = colors.textPrimary, modifier = Modifier.size(16.dp))
                         }
                     }
                 }
@@ -234,7 +232,7 @@ fun CustomDurationDialog(
                     colors = SliderDefaults.colors(
                         thumbColor = PrimaryIndigo,
                         activeTrackColor = PrimaryIndigo,
-                        inactiveTrackColor = Color(0xFF334155)
+                        inactiveTrackColor = colors.chipBackground
                     )
                 )
 
@@ -246,50 +244,50 @@ fun CustomDurationDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(text = "Minutes: $minutes", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                    Text(text = "Minutes: $minutes", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         Button(
                             onClick = { minutes = (minutes - 5).coerceAtLeast(0) },
                             enabled = minutes > 0 || hours > 0,
                             shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155)),
+                            colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
                             modifier = Modifier.height(28.dp)
                         ) {
-                            Text("-5", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            Text("-5", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                         }
 
                         Button(
                             onClick = { if (minutes > 0) minutes-- },
                             enabled = minutes > 0 || hours > 0,
                             shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155)),
+                            colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
                             modifier = Modifier.height(28.dp)
                         ) {
-                            Text("-1", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            Text("-1", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                         }
 
                         Button(
                             onClick = { if (minutes < 59) minutes++ },
                             enabled = minutes < 59,
                             shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155)),
+                            colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
                             modifier = Modifier.height(28.dp)
                         ) {
-                            Text("+1", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            Text("+1", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                         }
 
                         Button(
                             onClick = { minutes = (minutes + 5).coerceAtMost(59) },
                             enabled = minutes < 59,
                             shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155)),
+                            colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
                             modifier = Modifier.height(28.dp)
                         ) {
-                            Text("+5", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            Text("+5", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                         }
                     }
                 }
@@ -302,7 +300,7 @@ fun CustomDurationDialog(
                     colors = SliderDefaults.colors(
                         thumbColor = SecondaryCyan,
                         activeTrackColor = SecondaryCyan,
-                        inactiveTrackColor = Color(0xFF334155)
+                        inactiveTrackColor = colors.chipBackground
                     )
                 )
 
@@ -313,9 +311,9 @@ fun CustomDurationDialog(
                     onClick = {
                         if (totalMinutes > 0) {
                             val label = when {
-                                hours > 0 && minutes > 0 -> "+${hours}h ${minutes}m Custom Alarm"
-                                hours > 0 -> "+${hours}h Custom Alarm"
-                                else -> "+${minutes}m Custom Alarm"
+                                hours > 0 && minutes > 0 -> "+${hours}h ${minutes}m Countdown"
+                                hours > 0 -> "+${hours}h Countdown"
+                                else -> "+${minutes}m Countdown"
                             }
                             onConfirm(totalMinutes, label)
                         }
