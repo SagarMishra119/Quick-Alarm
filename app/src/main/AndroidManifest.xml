@@ -56,6 +56,19 @@
             </intent-filter>
         </receiver>
 
+        <!-- Home Screen Widget Receiver -->
+        <receiver
+            android:name=".widget.QuickAlarmWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.quickalarm.app.ACTION_WIDGET_PRESET_CLICK" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/quick_alarm_widget_info" />
+        </receiver>
+
     </application>
 
 </manifest>

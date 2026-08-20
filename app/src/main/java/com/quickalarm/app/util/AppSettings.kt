@@ -3,16 +3,19 @@ package com.quickalarm.app.util
 import android.content.Context
 import android.content.SharedPreferences
 import com.quickalarm.app.model.PresetItem
+import com.quickalarm.app.model.SavedAlarmItem
 import com.quickalarm.app.model.SoundItem
 import org.json.JSONArray
-import org.json.JSONObject
 
 object AppSettings {
-    private const val PREFS_SETTINGS = "quick_alarm_settings_v2"
+    private const val PREFS_SETTINGS = "quick_alarm_settings_v3"
     private const val KEY_PRESETS = "custom_presets"
+    private const val KEY_SAVED_ALARMS = "saved_fixed_alarms"
     private const val KEY_SELECTED_SOUND = "selected_sound"
     private const val KEY_SNOOZE_MINUTES = "snooze_minutes"
+    
     const val MAX_PRESETS = 10
+    const val MAX_SAVED_ALARMS = 10
 
     private fun getPrefs(context: Context): SharedPreferences {
         return context.getSharedPreferences(PREFS_SETTINGS, Context.MODE_PRIVATE)
@@ -75,19 +78,59 @@ object AppSettings {
         savePresets(context, current)
     }
 
-    fun reorderPresets(context: Context, fromIndex: Int, toIndex: Int) {
-        val current = getPresets(context).toMutableList()
-        if (fromIndex in current.indices && toIndex in current.indices) {
-            val item = current.removeAt(fromIndex)
-            current.add(toIndex, item)
-            savePresets(context, current)
-        }
-    }
-
     fun resetPresetsToDefault(context: Context): List<PresetItem> {
         val defaults = PresetItem.getDefaultPresets()
         savePresets(context, defaults)
         return defaults
+    }
+
+    // ================= SAVED FIXED ALARMS (UP TO 10) =================
+
+    fun getSavedAlarms(context: Context): List<SavedAlarmItem> {
+        val prefs = getPrefs(context)
+        val jsonStr = prefs.getString(KEY_SAVED_ALARMS, null)
+        if (jsonStr.isNullOrBlank()) {
+            return emptyList() // Empty by default
+        }
+
+        return try {
+            val jsonArray = JSONArray(jsonStr)
+            val list = mutableListOf<SavedAlarmItem>()
+            for (i in 0 until jsonArray.length()) {
+                val item = SavedAlarmItem.fromJson(jsonArray.getString(i))
+                if (item != null) list.add(item)
+            }
+            list.sortedWith(compareBy({ it.hour }, { it.minute }))
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    fun saveSavedAlarms(context: Context, alarms: List<SavedAlarmItem>) {
+        val limited = alarms.take(MAX_SAVED_ALARMS)
+        val jsonArray = JSONArray()
+        limited.forEach { jsonArray.put(it.toJson()) }
+        getPrefs(context).edit().putString(KEY_SAVED_ALARMS, jsonArray.toString()).apply()
+    }
+
+    fun addSavedAlarm(context: Context, alarm: SavedAlarmItem): Boolean {
+        val current = getSavedAlarms(context).toMutableList()
+        if (current.size >= MAX_SAVED_ALARMS) return false
+        current.add(alarm)
+        saveSavedAlarms(context, current)
+        return true
+    }
+
+    fun updateSavedAlarm(context: Context, updated: SavedAlarmItem) {
+        val current = getSavedAlarms(context).map {
+            if (it.id == updated.id) updated else it
+        }
+        saveSavedAlarms(context, current)
+    }
+
+    fun deleteSavedAlarm(context: Context, alarmId: Long) {
+        val current = getSavedAlarms(context).filterNot { it.id == alarmId }
+        saveSavedAlarms(context, current)
     }
 
     // ================= SOUND SETTINGS =================

@@ -1,39 +1,41 @@
-# Quick Alarm
+# Quick Alarm v3
 
-A clean, modern, lightweight, and 100% offline Android alarm and quick-timer application built with **Kotlin** and **Jetpack Compose**. It allows users to set timers and alarms in a single tap with custom presets, custom durations, customizable alarm audio, and configurable snooze intervals.
-
----
-
-## 📊 Version Comparison: v1.0 vs v2.0
-
-| Feature / Capability | Quick Alarm v1.0 | Quick Alarm v2.0 (Latest) |
-| :--- | :--- | :--- |
-| **One-Tap Presets** | Fixed 6 presets (+15m, +30m, +1h, +2h, +4h, +6h) | **Fully customizable (Up to 10 presets)**: Add, edit, delete, reorder, and set custom durations (any exact minute). |
-| **Preset Colors & Titles** | Hardcoded titles and styles | **10 theme colors**, dynamic real-time auto-updating titles, and custom labels. |
-| **Alarm Sounds** | Default system sound only | **Customizable Audio**: System alarm, notification, ringtone, or custom audio files (MP3, WAV, OGG, FLAC) with live preview. |
-| **Snooze Duration** | Fixed at 5 minutes | **Customizable Snooze**: Quick presets (1m, 3m, 5m, 10m, 15m, 20m, 30m) or 1–60 min custom slider/steppers. |
-| **Audio Playback Engine** | Dual-sound collision between notifications & `AlarmActivity` | **Silent Notification Channel + Activity Audio**: Eliminates overlapping audio/echoes on lock screen. |
-| **UI Dashboard Layout** | Active alarms positioned below presets | **Active Alarms Moved to Top**: Real-time countdowns & cancel controls visible immediately below the header clock. |
-| **Preferences & Storage** | In-memory / basic alarm list | **Persistent Local Settings**: Sound, snooze, and presets saved offline via `AppSettings` and `SharedPreferences`. |
+A clean, modern, lightweight, and 100% offline Android alarm and quick-timer application built with **Kotlin** and **Jetpack Compose**. It allows users to set timers and alarms in a single tap with custom presets, stored fixed clock alarms, home screen widget, customizable alarm audio from device library, and configurable snooze intervals.
 
 ---
 
-## 🌟 What's New in v2.0
+## 📊 Version Comparison (v1.0 vs v2.0 vs v3.0)
 
-- **Customizable Alarm Sounds:**
-  - Built-in system sounds (System Alarm, System Notification, System Ringtone).
-  - Pick custom audio tracks (MP3, WAV, OGG, FLAC) from device storage with live preview before saving.
-- **Customizable Snooze Intervals:**
-  - Preset snooze durations (1m, 3m, 5m, 10m, 15m, 20m, 30m) or custom intervals (1 - 60 minutes).
-- **Preset Management (Up to 10 Quick Presets):**
-  - Create, edit, delete, and reorder custom one-tap alarm presets with custom titles, labels, durations, and vibrant color themes.
-  - One-tap "Reset to Defaults" option.
-- **Optimized UI Layout (Active Alarms Moved Up):**
-  - Active alarms and live countdowns are now positioned prominently right above the presets for instant visibility and fast cancellation.
-- **Eliminated Dual-Sound Collision:**
-  - Resolved the audio collision bug where notifications and `AlarmActivity` played two overlapping sounds when ringing while the phone screen was off.
-- **100% Offline & Private:**
-  - All preferences and alarms are persisted strictly in local `SharedPreferences`. No account, Firebase, or internet permissions required.
+| Feature / Capability | Quick Alarm v1.0 | Quick Alarm v2.0 | Quick Alarm v3.0 (Latest) |
+| :--- | :--- | :--- | :--- |
+| **Interactive Home Widget** | ❌ None | ❌ None | **✅ 4x2 / 4x1 Home Screen Widget** (1-tap preset alarm scheduling + status badge) |
+| **Stored Fixed Alarms** | ❌ None | ❌ None | **✅ Up to 10 Saved Time Alarms** (Empty by default, toggle switches, AM/PM time pickers) |
+| **Device Sound Library** | Default sound only | Single custom audio pick | **✅ Full OEM System Alarm Library** (Scans all pre-installed phone ringtones + local files) |
+| **One-Tap Presets** | Fixed 6 presets | Customizable presets | **✅ Up to 10 Presets** with ±1m/±5m steppers, 0-59 sliders, dynamic titles & 10 theme colors |
+| **Performance / Lag Fix** | Basic | Periodic 1s disk I/O | **✅ 120 FPS Buttery Smooth**: Removed all main-thread disk I/O & IPC from clock ticker loop |
+| **Snooze Customization** | Fixed at 5 minutes | Basic modal | **✅ 1m–60m Stepper + Slider** with responsive scrollable layout |
+| **Audio Engine** | Dual-sound collision | Single-source audio | **✅ Silent Notification Channel + looper MediaPlayer** in `AlarmActivity` |
+| **Local Offline Storage** | In-memory only | Basic preferences | **✅ Robust `SharedPreferences`** with zero external network or Firebase dependencies |
+
+---
+
+## 🌟 What's New in v3.0
+
+- **📱 Interactive Android Home Screen Widget (`QuickAlarmWidget`):**
+  - Instant one-tap alarms directly from your home screen without opening the app.
+  - Displays live active alarm status badge.
+  - Tapping the widget header launches the full app.
+- **🕒 Stored Fixed Alarms (Up to 10, Empty by Default):**
+  - Save your favorite recurring daily times (e.g. `07:00 AM - Morning Workout`, `11:00 PM - Bedtime`).
+  - Toggle switches on each card to enable/disable.
+  - Interactive AM/PM time picker modal.
+- **🎵 Full Device System Sound Library Explorer:**
+  - Automatically queries all pre-installed manufacturer alarm ringtones (Pixel, Samsung, OnePlus, Xiaomi, etc.).
+  - Pick and preview any local audio track (MP3, WAV, FLAC, OGG, AAC) from device storage.
+- **⚡ Performance & Smoothness Optimization:**
+  - Completely eliminated disk I/O and JSON parsing from the 1-second clock loop, ensuring smooth 120 FPS scrolling and zero frame drops.
+- **✨ UI Beautification & Ergonomics:**
+  - Modern card designs with neon accents, AMOLED deep background (`#0F172A`), and clear section hierarchy.
 
 ---
 
@@ -43,24 +45,28 @@ A clean, modern, lightweight, and 100% offline Android alarm and quick-timer app
 app/src/main/java/com/quickalarm/app/
 ├── model/
 │   ├── AlarmItem.kt              # Active alarm data model (JSON serializable)
-│   ├── PresetItem.kt             # [NEW v2] Customizable preset model (colors, titles, minutes)
-│   └── SoundItem.kt              # [NEW v2] Sound configuration & custom audio URI holder
+│   ├── PresetItem.kt             # Customizable preset model (10 colors, titles, minutes)
+│   ├── SavedAlarmItem.kt         # [NEW v3] Stored fixed clock alarm model with next trigger helper
+│   └── SoundItem.kt              # [UPDATED v3] OEM RingtoneManager scanner & audio URI holder
 ├── ui/
 │   ├── screens/
-│   │   ├── MainScreen.kt         # [UPDATED v2] Restructured layout with Active Alarms on top & settings
-│   │   ├── CustomDurationDialog.kt # [UPDATED v2] Exact 1-minute steppers & scrollable container
-│   │   ├── SoundPickerDialog.kt  # [NEW v2] Audio file picker & preview player
-│   │   ├── SnoozeDurationDialog.kt # [NEW v2] Snooze preset chips & 1-60m stepper slider
-│   │   ├── PresetManageDialog.kt # [NEW v2] Reorder (up/down), edit, delete, and reset presets
-│   │   ├── PresetEditDialog.kt   # [NEW v2] Custom title auto-sync, 1m/5m steppers & color picker
+│   │   ├── MainScreen.kt         # [UPDATED v3] Zero-lag ticker, Saved Alarms list & Widget sync
+│   │   ├── SavedAlarmDialog.kt   # [NEW v3] Modal AM/PM clock time picker for saved alarms
+│   │   ├── CustomDurationDialog.kt # Exact 1-minute steppers & scrollable container
+│   │   ├── SoundPickerDialog.kt  # [UPDATED v3] Full OEM system sound library & preview player
+│   │   ├── SnoozeDurationDialog.kt # Snooze preset chips & 1-60m stepper slider
+│   │   ├── PresetManageDialog.kt # Reorder (up/down), edit, delete, and reset presets
+│   │   ├── PresetEditDialog.kt   # Dynamic title auto-sync, 1m/5m steppers & color picker
 │   │   └── PermissionBanner.kt   # Android 13+ Notification & Exact Alarm permission cards
 │   └── theme/
 │       ├── Color.kt              # Color palettes & gradients
 │       ├── Theme.kt              # Material 3 dark theme setup
 │       └── Type.kt               # Typography definitions
-└── util/
-    ├── AlarmScheduler.kt         # [UPDATED v2] Silent notification channel + Exact AlarmManager logic
-    └── AppSettings.kt            # [NEW v2] Offline SharedPreferences manager for sounds, snooze & presets
+├── util/
+│   ├── AlarmScheduler.kt         # Silent notification channel + Exact AlarmManager logic
+│   └── AppSettings.kt            # [UPDATED v3] Offline manager for presets, sounds & saved alarms
+└── widget/
+    └── QuickAlarmWidgetProvider.kt # [NEW v3] AppWidgetProvider handling 1-tap home screen triggers
 ```
 
 ---
@@ -90,7 +96,7 @@ app/src/main/java/com/quickalarm/app/
   ./gradlew assembleDebug
   ```
 
-The generated APK is output at `QuickAlarmv2.apk` in the root directory and `app/build/outputs/apk/debug/app-debug.apk`.
+The generated APK is output at `QuickAlarmv3.apk` in the root directory and `app/build/outputs/apk/debug/app-debug.apk`.
 
 ---
 

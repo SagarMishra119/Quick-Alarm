@@ -153,6 +153,11 @@ object AlarmScheduler {
         val jsonArray = JSONArray()
         alarms.forEach { jsonArray.put(it.toJson()) }
         getPrefs(context).edit().putString(KEY_ALARMS, jsonArray.toString()).apply()
+        try {
+            com.quickalarm.app.widget.QuickAlarmWidgetProvider.updateAllWidgets(context)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     private fun getPrefs(context: Context): SharedPreferences {

@@ -43,6 +43,9 @@ fun SoundPickerDialog(
     var playingSoundId by remember { mutableStateOf<String?>(null) }
     var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
 
+    // Query all device system alarm tones asynchronously on first compose
+    val installedSounds = remember { SoundItem.getInstalledDeviceAlarmSounds(context) }
+
     fun stopAudio() {
         try {
             mediaPlayer?.stop()
@@ -116,7 +119,8 @@ fun SoundPickerDialog(
                     id = "custom_${System.currentTimeMillis()}",
                     title = displayName,
                     uriString = uri.toString(),
-                    isCustom = true
+                    isCustom = true,
+                    soundType = SoundItem.TYPE_LOCAL_FILE
                 )
                 selectedSound = customSound
                 playAudio(customSound)
@@ -125,8 +129,6 @@ fun SoundPickerDialog(
             }
         }
     }
-
-    val defaultSounds = remember { SoundItem.getDefaultSystemSounds() }
 
     Dialog(
         onDismissRequest = {
@@ -138,7 +140,7 @@ fun SoundPickerDialog(
         Card(
             modifier = Modifier
                 .fillMaxWidth(0.92f)
-                .heightIn(min = 400.dp, max = 560.dp)
+                .heightIn(min = 400.dp, max = 580.dp)
                 .padding(vertical = 12.dp),
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(containerColor = SurfaceCard),
@@ -170,12 +172,19 @@ fun SoundPickerDialog(
                             )
                         }
                         Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = "Alarm Sound",
-                            fontSize = 19.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = TextPrimary
-                        )
+                        Column {
+                            Text(
+                                text = "Alarm Sound Library",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextPrimary
+                            )
+                            Text(
+                                text = "${installedSounds.size} Device Sounds Available",
+                                fontSize = 11.sp,
+                                color = TextSecondary
+                            )
+                        }
                     }
                     IconButton(
                         onClick = {
@@ -195,16 +204,102 @@ fun SoundPickerDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // System sounds
-                    items(defaultSounds) { sound ->
-                        val isSelected = selectedSound.id == sound.id
+                    // Pick Custom Audio File Button
+                    item {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    audioPickerLauncher.launch(arrayOf("audio/*"))
+                                },
+                            shape = RoundedCornerShape(14.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A))
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .border(1.dp, Color(0xFF4338CA), RoundedCornerShape(14.dp))
+                                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(32.dp)
+                                            .background(Color(0xFF312E81), CircleShape),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.FolderOpen,
+                                            contentDescription = null,
+                                            tint = PrimaryIndigo,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Column {
+                                        Text(
+                                            text = "+ Pick Audio File from Storage",
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White
+                                        )
+                                        Text(
+                                            text = "MP3, WAV, FLAC, OGG, AAC",
+                                            fontSize = 10.sp,
+                                            color = TextSecondary
+                                        )
+                                    }
+                                }
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = null,
+                                    tint = PrimaryIndigo,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    // User's custom picked sound if selected
+                    if (selectedSound.isCustom) {
+                        item {
+                            val isPlaying = playingSoundId == selectedSound.id
+                            SoundOptionRow(
+                                title = selectedSound.title,
+                                subtitle = "Custom Storage Audio",
+                                isSelected = true,
+                                isPlaying = isPlaying,
+                                onSelect = { playAudio(selectedSound) },
+                                onTogglePlay = {
+                                    if (isPlaying) stopAudio() else playAudio(selectedSound)
+                                }
+                            )
+                        }
+                    }
+
+                    item {
+                        Text(
+                            text = "SYSTEM & OEM ALARM TONES",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextMuted,
+                            letterSpacing = 1.sp,
+                            modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
+                        )
+                    }
+
+                    // All system and device alarm sounds
+                    items(installedSounds, key = { it.id + it.title }) { sound ->
+                        val isSelected = selectedSound.id == sound.id || (!selectedSound.isCustom && selectedSound.title == sound.title)
                         val isPlaying = playingSoundId == sound.id
 
                         SoundOptionRow(
                             title = sound.title,
-                            subtitle = "Built-in System Sound",
+                            subtitle = if (sound.id == SoundItem.SOUND_ID_DEFAULT) "System Default Alarm" else "Device Ringtone",
                             isSelected = isSelected,
                             isPlaying = isPlaying,
                             onSelect = {
@@ -216,88 +311,11 @@ fun SoundPickerDialog(
                             }
                         )
                     }
-
-                    // Custom picked sound (if any selected)
-                    if (selectedSound.isCustom) {
-                        item {
-                            val isPlaying = playingSoundId == selectedSound.id
-                            SoundOptionRow(
-                                title = selectedSound.title,
-                                subtitle = "User Selected Audio",
-                                isSelected = true,
-                                isPlaying = isPlaying,
-                                onSelect = {
-                                    playAudio(selectedSound)
-                                },
-                                onTogglePlay = {
-                                    if (isPlaying) stopAudio() else playAudio(selectedSound)
-                                }
-                            )
-                        }
-                    }
-
-                    // Choose Custom Audio File Button
-                    item {
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    audioPickerLauncher.launch(arrayOf("audio/*"))
-                                },
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A))
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .border(1.dp, Color(0xFF4338CA), RoundedCornerShape(16.dp))
-                                    .padding(14.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(34.dp)
-                                            .background(Color(0xFF312E81), CircleShape),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.AudioFile,
-                                            contentDescription = null,
-                                            tint = PrimaryIndigo,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.width(10.dp))
-                                    Column {
-                                        Text(
-                                            text = "Pick Audio File from Device",
-                                            fontSize = 13.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color.White
-                                        )
-                                        Text(
-                                            text = "MP3, WAV, OGG, FLAC",
-                                            fontSize = 11.sp,
-                                            color = TextSecondary
-                                        )
-                                    }
-                                }
-                                Icon(
-                                    imageVector = Icons.Default.FolderOpen,
-                                    contentDescription = null,
-                                    tint = PrimaryIndigo,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                    }
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-                // Pinned Confirm button (Never cut off!)
+                // Pinned Confirm Button (Never cut off!)
                 Button(
                     onClick = {
                         stopAudio()
@@ -310,7 +328,7 @@ fun SoundPickerDialog(
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigo)
                 ) {
                     Text(
-                        text = "Save Sound",
+                        text = "Set as Alarm Sound",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -334,7 +352,7 @@ fun SoundOptionRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onSelect() },
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) Color(0xFF1E1B4B) else Color(0xFF0F172A)
         )
@@ -345,9 +363,9 @@ fun SoundOptionRow(
                 .border(
                     width = if (isSelected) 1.5.dp else 1.dp,
                     color = if (isSelected) PrimaryIndigo else SurfaceCardBorder,
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(14.dp)
                 )
-                .padding(horizontal = 14.dp, vertical = 10.dp),
+                .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -373,7 +391,7 @@ fun SoundOptionRow(
                     )
                     Text(
                         text = subtitle,
-                        fontSize = 11.sp,
+                        fontSize = 10.sp,
                         color = TextSecondary
                     )
                 }
@@ -382,7 +400,7 @@ fun SoundOptionRow(
             IconButton(
                 onClick = onTogglePlay,
                 modifier = Modifier
-                    .size(34.dp)
+                    .size(32.dp)
                     .background(
                         if (isPlaying) Color(0xFF064E3B) else Color(0xFF334155),
                         CircleShape

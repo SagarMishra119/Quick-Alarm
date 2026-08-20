@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.quickalarm.app.model.AlarmItem
 import com.quickalarm.app.model.PresetItem
+import com.quickalarm.app.model.SavedAlarmItem
 import com.quickalarm.app.model.SoundItem
 import com.quickalarm.app.ui.theme.*
 import com.quickalarm.app.util.AlarmScheduler
@@ -50,16 +51,13 @@ import java.util.Locale
 fun MainScreen() {
     val context = LocalContext.current
 
-    // Live clock state
+    // Live clock ticker state
     var currentTimeMillis by remember { mutableLongStateOf(System.currentTimeMillis()) }
 
-    // Active alarms state
+    // In-memory data states (loaded once, updated event-driven for 120 FPS buttery smooth performance)
     var activeAlarms by remember { mutableStateOf(AlarmScheduler.getActiveAlarms(context)) }
-
-    // Presets state
     var presets by remember { mutableStateOf(AppSettings.getPresets(context)) }
-
-    // Sound and Snooze preferences
+    var savedAlarms by remember { mutableStateOf(AppSettings.getSavedAlarms(context)) }
     var selectedSound by remember { mutableStateOf(AppSettings.getSelectedSound(context)) }
     var snoozeMinutes by remember { mutableIntStateOf(AppSettings.getSnoozeMinutes(context)) }
 
@@ -67,13 +65,15 @@ fun MainScreen() {
     var lastScheduledAlarm by remember { mutableStateOf<AlarmItem?>(null) }
     var showSuccessBanner by remember { mutableStateOf(false) }
 
-    // Dialog visibility states
+    // Dialog states
     var showCustomDialog by remember { mutableStateOf(false) }
     var showSoundDialog by remember { mutableStateOf(false) }
     var showSnoozeDialog by remember { mutableStateOf(false) }
     var showManagePresetsDialog by remember { mutableStateOf(false) }
     var presetToEdit by remember { mutableStateOf<PresetItem?>(null) }
     var showEditPresetDialog by remember { mutableStateOf(false) }
+    var savedAlarmToEdit by remember { mutableStateOf<SavedAlarmItem?>(null) }
+    var showSavedAlarmDialog by remember { mutableStateOf(false) }
 
     // Permission states
     var hasExactAlarmPermission by remember { mutableStateOf(AlarmScheduler.canScheduleExactAlarms(context)) }
@@ -88,7 +88,6 @@ fun MainScreen() {
         )
     }
 
-    // Permission Launcher for Android 13+
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -98,26 +97,21 @@ fun MainScreen() {
         }
     }
 
-    // Live ticker loop
+    // High performance ticker: Only updates currentTimeMillis every second (No disk I/O or JSON parsing on the main thread!)
     LaunchedEffect(Unit) {
         while (true) {
             currentTimeMillis = System.currentTimeMillis()
-            activeAlarms = AlarmScheduler.getActiveAlarms(context)
-            hasExactAlarmPermission = AlarmScheduler.canScheduleExactAlarms(context)
+            // Clean in-memory filter for expired alarms
+            val unexpired = activeAlarms.filter { it.triggerTimeMillis > currentTimeMillis - 60_000 }
+            if (unexpired.size != activeAlarms.size) {
+                activeAlarms = unexpired
+            }
             delay(1000)
         }
     }
 
-    // Helper to schedule alarm
-    fun setAlarm(minutes: Int, label: String) {
-        val triggerTime = System.currentTimeMillis() + (minutes * 60 * 1000L)
-        val alarm = AlarmItem(
-            id = System.currentTimeMillis(),
-            triggerTimeMillis = triggerTime,
-            durationMinutes = minutes,
-            label = label
-        )
-
+    // Helper to schedule an alarm item
+    fun scheduleNewAlarm(alarm: AlarmItem) {
         val success = AlarmScheduler.scheduleAlarm(context, alarm)
         if (success) {
             activeAlarms = AlarmScheduler.getActiveAlarms(context)
@@ -125,32 +119,64 @@ fun MainScreen() {
             showSuccessBanner = true
             Toast.makeText(
                 context,
-                "⏰ Alarm set for ${AlarmScheduler.formatTime(triggerTime)}",
+                "⏰ Alarm set for ${AlarmScheduler.formatTime(alarm.triggerTimeMillis)}",
                 Toast.LENGTH_LONG
             ).show()
         } else {
+            hasExactAlarmPermission = AlarmScheduler.canScheduleExactAlarms(context)
             Toast.makeText(
                 context,
-                "Failed to set alarm. Check exact alarm permissions.",
+                "Failed to set alarm. Please check permissions.",
                 Toast.LENGTH_SHORT
             ).show()
         }
     }
 
-    // Helper for quick 5-second test alarm
+    fun setQuickPresetAlarm(minutes: Int, label: String) {
+        val triggerTime = System.currentTimeMillis() + (minutes * 60 * 1000L)
+        val alarm = AlarmItem(
+            id = System.currentTimeMillis(),
+            triggerTimeMillis = triggerTime,
+            durationMinutes = minutes,
+            label = label
+        )
+        scheduleNewAlarm(alarm)
+    }
+
     fun setTestAlarm() {
-        val triggerTime = System.currentTimeMillis() + 5000L // 5 seconds
+        val triggerTime = System.currentTimeMillis() + 5000L
         val alarm = AlarmItem(
             id = System.currentTimeMillis(),
             triggerTimeMillis = triggerTime,
             durationMinutes = 0,
             label = "⚡ Quick Test Alarm (5s)"
         )
-        AlarmScheduler.scheduleAlarm(context, alarm)
-        activeAlarms = AlarmScheduler.getActiveAlarms(context)
-        lastScheduledAlarm = alarm
-        showSuccessBanner = true
-        Toast.makeText(context, "⚡ Test alarm scheduled for 5 seconds from now!", Toast.LENGTH_LONG).show()
+        scheduleNewAlarm(alarm)
+    }
+
+    // Toggle Saved Alarm ON/OFF
+    fun toggleSavedAlarm(saved: SavedAlarmItem, enable: Boolean) {
+        val updated = saved.copy(isEnabled = enable)
+        AppSettings.updateSavedAlarm(context, updated)
+        savedAlarms = AppSettings.getSavedAlarms(context)
+
+        if (enable) {
+            val triggerTime = updated.getNextTriggerTimeMillis()
+            val alarmItem = AlarmItem(
+                id = updated.id,
+                triggerTimeMillis = triggerTime,
+                durationMinutes = ((triggerTime - System.currentTimeMillis()) / 60000L).toInt(),
+                label = updated.label
+            )
+            scheduleNewAlarm(alarmItem)
+        } else {
+            val existing = activeAlarms.find { it.id == updated.id }
+            if (existing != null) {
+                AlarmScheduler.cancelAlarm(context, existing)
+                activeAlarms = AlarmScheduler.getActiveAlarms(context)
+            }
+            Toast.makeText(context, "${updated.getFormattedTime()} alarm disabled", Toast.LENGTH_SHORT).show()
+        }
     }
 
     Surface(
@@ -169,12 +195,12 @@ fun MainScreen() {
             ) {
                 item { Spacer(modifier = Modifier.height(6.dp)) }
 
-                // 1. Top App Header & Live Clock with v2.0 badge
+                // 1. Top Header & Live Clock with v3.0 Badge
                 item {
                     HeaderClockSection(currentTimeMillis = currentTimeMillis)
                 }
 
-                // 2. Permission Banners (if required)
+                // 2. Permissions Banners (if needed)
                 if (!hasNotificationPermission && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     item {
                         NotificationPermissionBanner(
@@ -190,12 +216,13 @@ fun MainScreen() {
                         ExactAlarmPermissionBanner(
                             onGrantClick = {
                                 AlarmScheduler.openExactAlarmSettings(context)
+                                hasExactAlarmPermission = AlarmScheduler.canScheduleExactAlarms(context)
                             }
                         )
                     }
                 }
 
-                // 3. Success Scheduled Confirmation Banner
+                // 3. Success Scheduled Banner
                 item {
                     AnimatedVisibility(
                         visible = showSuccessBanner && lastScheduledAlarm != null,
@@ -211,7 +238,7 @@ fun MainScreen() {
                     }
                 }
 
-                // 4. ACTIVE ALARMS SECTION (MOVED UPWARDS)
+                // 4. ACTIVE ALARMS SECTION
                 item {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -258,13 +285,95 @@ fun MainScreen() {
                             onCancel = {
                                 AlarmScheduler.cancelAlarm(context, alarm)
                                 activeAlarms = AlarmScheduler.getActiveAlarms(context)
+                                // Also update saved alarm switch if it was a saved alarm
+                                val savedMatch = savedAlarms.find { it.id == alarm.id }
+                                if (savedMatch != null && savedMatch.isEnabled) {
+                                    val updated = savedMatch.copy(isEnabled = false)
+                                    AppSettings.updateSavedAlarm(context, updated)
+                                    savedAlarms = AppSettings.getSavedAlarms(context)
+                                }
                                 Toast.makeText(context, "Alarm cancelled", Toast.LENGTH_SHORT).show()
                             }
                         )
                     }
                 }
 
-                // 5. ONE-TAP ALARMS SECTION
+                // 5. SAVED CLOCK ALARMS SECTION (Up to 10 stored fixed time alarms)
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(
+                                imageVector = Icons.Default.AccessTime,
+                                contentDescription = null,
+                                tint = AccentEmerald,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = "SAVED ALARMS (${savedAlarms.size}/${AppSettings.MAX_SAVED_ALARMS})",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextMuted,
+                                letterSpacing = 1.5.sp
+                            )
+                        }
+
+                        if (savedAlarms.size < AppSettings.MAX_SAVED_ALARMS) {
+                            Row(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(Color(0xFF064E3B))
+                                    .clickable {
+                                        savedAlarmToEdit = null
+                                        showSavedAlarmDialog = true
+                                    }
+                                    .padding(horizontal = 10.dp, vertical = 5.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = null, tint = AccentEmerald, modifier = Modifier.size(14.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("+ Add Alarm", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            }
+                        }
+                    }
+                }
+
+                if (savedAlarms.isEmpty()) {
+                    item {
+                        EmptySavedAlarmsState(
+                            onAddClick = {
+                                savedAlarmToEdit = null
+                                showSavedAlarmDialog = true
+                            }
+                        )
+                    }
+                } else {
+                    items(savedAlarms, key = { it.id }) { saved ->
+                        SavedAlarmRowCard(
+                            saved = saved,
+                            onToggle = { enable -> toggleSavedAlarm(saved, enable) },
+                            onEdit = {
+                                savedAlarmToEdit = saved
+                                showSavedAlarmDialog = true
+                            },
+                            onDelete = {
+                                AppSettings.deleteSavedAlarm(context, saved.id)
+                                savedAlarms = AppSettings.getSavedAlarms(context)
+                                val running = activeAlarms.find { it.id == saved.id }
+                                if (running != null) {
+                                    AlarmScheduler.cancelAlarm(context, running)
+                                    activeAlarms = AlarmScheduler.getActiveAlarms(context)
+                                }
+                                Toast.makeText(context, "Saved alarm deleted", Toast.LENGTH_SHORT).show()
+                            }
+                        )
+                    }
+                }
+
+                // 6. ONE-TAP PRESETS SECTION
                 item {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -293,22 +402,12 @@ fun MainScreen() {
                                     .padding(horizontal = 8.dp, vertical = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Tune,
-                                    contentDescription = "Manage",
-                                    tint = PrimaryIndigo,
-                                    modifier = Modifier.size(13.dp)
-                                )
+                                Icon(Icons.Default.Tune, contentDescription = "Manage", tint = PrimaryIndigo, modifier = Modifier.size(13.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = "Manage",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
+                                Text("Manage", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
                             }
 
-                            // Test +5s button
+                            // Test +5s Button
                             Row(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(10.dp))
@@ -317,25 +416,15 @@ fun MainScreen() {
                                     .padding(horizontal = 8.dp, vertical = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.FlashOn,
-                                    contentDescription = null,
-                                    tint = AccentAmber,
-                                    modifier = Modifier.size(13.dp)
-                                )
+                                Icon(Icons.Default.FlashOn, contentDescription = null, tint = AccentAmber, modifier = Modifier.size(13.dp))
                                 Spacer(modifier = Modifier.width(3.dp))
-                                Text(
-                                    text = "+5s",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
+                                Text("+5s", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
                             }
                         }
                     }
                 }
 
-                // Grid of One-Tap Preset Buttons (Responsive 2 per row)
+                // Grid of One-Tap Presets
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         for (row in presets.chunked(2)) {
@@ -348,7 +437,7 @@ fun MainScreen() {
                                         preset = preset,
                                         modifier = Modifier.weight(1f),
                                         onClick = {
-                                            setAlarm(preset.minutes, "${preset.title} Quick Alarm")
+                                            setQuickPresetAlarm(preset.minutes, "${preset.title} Quick Alarm")
                                         }
                                     )
                                 }
@@ -360,14 +449,12 @@ fun MainScreen() {
                     }
                 }
 
-                // 6. Custom Duration Button
+                // 7. Custom Duration Button
                 item {
-                    CustomAlarmButton(
-                        onClick = { showCustomDialog = true }
-                    )
+                    CustomAlarmButton(onClick = { showCustomDialog = true })
                 }
 
-                // 7. PREFERENCES SECTION (Sound & Snooze)
+                // 8. PREFERENCES SECTION (Sound & Snooze)
                 item {
                     Text(
                         text = "PREFERENCES & SETTINGS",
@@ -383,7 +470,6 @@ fun MainScreen() {
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        // Sound Card
                         PreferenceCard(
                             icon = Icons.Default.MusicNote,
                             iconColor = SecondaryCyan,
@@ -393,7 +479,6 @@ fun MainScreen() {
                             onClick = { showSoundDialog = true }
                         )
 
-                        // Snooze Card
                         PreferenceCard(
                             icon = Icons.Default.Snooze,
                             iconColor = AccentAmber,
@@ -409,18 +494,20 @@ fun MainScreen() {
             }
         }
 
-        // Custom Duration Modal Dialog
+        // --- ALL DIALOGS ---
+
+        // Custom Duration Dialog
         if (showCustomDialog) {
             CustomDurationDialog(
                 onDismiss = { showCustomDialog = false },
                 onConfirm = { minutes, label ->
                     showCustomDialog = false
-                    setAlarm(minutes, label)
+                    setQuickPresetAlarm(minutes, label)
                 }
             )
         }
 
-        // Sound Picker Dialog
+        // Sound Picker Dialog (Full System Library + Local Audio)
         if (showSoundDialog) {
             SoundPickerDialog(
                 currentSound = selectedSound,
@@ -456,6 +543,7 @@ fun MainScreen() {
                 onPresetsChanged = { updatedList ->
                     presets = updatedList
                     AppSettings.savePresets(context, updatedList)
+                    com.quickalarm.app.widget.QuickAlarmWidgetProvider.updateAllWidgets(context)
                 },
                 onAddNewPreset = {
                     presetToEdit = null
@@ -483,9 +571,44 @@ fun MainScreen() {
                         AppSettings.addPreset(context, savedPreset)
                     }
                     presets = AppSettings.getPresets(context)
+                    com.quickalarm.app.widget.QuickAlarmWidgetProvider.updateAllWidgets(context)
                     showEditPresetDialog = false
                     presetToEdit = null
                     Toast.makeText(context, "Preset saved!", Toast.LENGTH_SHORT).show()
+                }
+            )
+        }
+
+        // Saved Clock Alarm Add/Edit Dialog
+        if (showSavedAlarmDialog) {
+            SavedAlarmDialog(
+                alarmToEdit = savedAlarmToEdit,
+                onDismiss = {
+                    showSavedAlarmDialog = false
+                    savedAlarmToEdit = null
+                },
+                onSave = { savedAlarm ->
+                    if (savedAlarmToEdit != null) {
+                        AppSettings.updateSavedAlarm(context, savedAlarm)
+                    } else {
+                        AppSettings.addSavedAlarm(context, savedAlarm)
+                    }
+                    savedAlarms = AppSettings.getSavedAlarms(context)
+                    showSavedAlarmDialog = false
+                    savedAlarmToEdit = null
+
+                    // If enabled, schedule the alarm
+                    if (savedAlarm.isEnabled) {
+                        val triggerTime = savedAlarm.getNextTriggerTimeMillis()
+                        val alarmItem = AlarmItem(
+                            id = savedAlarm.id,
+                            triggerTimeMillis = triggerTime,
+                            durationMinutes = ((triggerTime - System.currentTimeMillis()) / 60000L).toInt(),
+                            label = savedAlarm.label
+                        )
+                        scheduleNewAlarm(alarmItem)
+                    }
+                    Toast.makeText(context, "Saved alarm ${savedAlarm.getFormattedTime()} updated", Toast.LENGTH_SHORT).show()
                 }
             )
         }
@@ -548,7 +671,7 @@ fun HeaderClockSection(currentTimeMillis: Long) {
                                     .padding(horizontal = 5.dp, vertical = 1.dp)
                             ) {
                                 Text(
-                                    text = "v2.0",
+                                    text = "v3.0",
                                     fontSize = 9.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White
@@ -556,7 +679,7 @@ fun HeaderClockSection(currentTimeMillis: Long) {
                             }
                         }
                         Text(
-                            text = "Instant Offline Alarms",
+                            text = "Instant Offline Alarms & Widget",
                             fontSize = 11.sp,
                             color = TextSecondary
                         )
@@ -580,7 +703,6 @@ fun HeaderClockSection(currentTimeMillis: Long) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Current Time Ticker Display
             Column(horizontalAlignment = Alignment.Start) {
                 Text(
                     text = dateFormat.format(Date(currentTimeMillis)),
@@ -596,6 +718,130 @@ fun HeaderClockSection(currentTimeMillis: Long) {
                     letterSpacing = 1.sp
                 )
             }
+        }
+    }
+}
+
+@Composable
+fun SavedAlarmRowCard(
+    saved: SavedAlarmItem,
+    onToggle: (Boolean) -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (saved.isEnabled) Color(0xFF064E3B).copy(alpha = 0.35f) else SurfaceCard
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(
+                    width = 1.dp,
+                    color = if (saved.isEnabled) AccentEmerald.copy(alpha = 0.5f) else SurfaceCardBorder,
+                    shape = RoundedCornerShape(16.dp)
+                )
+                .clickable { onEdit() }
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = saved.getFormattedTime(),
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = if (saved.isEnabled) Color.White else TextMuted
+                    )
+                }
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = saved.label,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = if (saved.isEnabled) AccentEmerald else TextSecondary
+                )
+            }
+
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Switch(
+                    checked = saved.isEnabled,
+                    onCheckedChange = onToggle,
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = AccentEmerald,
+                        uncheckedThumbColor = TextMuted,
+                        uncheckedTrackColor = Color(0xFF334155)
+                    )
+                )
+
+                IconButton(
+                    onClick = onDelete,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Delete",
+                        tint = Color(0xFFF87171).copy(alpha = 0.8f),
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun EmptySavedAlarmsState(
+    onAddClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF131D31))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(1.dp, SurfaceCardBorder.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+                .clickable { onAddClick() }
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .background(Color(0xFF1E293B), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.AccessTime, contentDescription = null, tint = TextMuted, modifier = Modifier.size(18.dp))
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = "No Saved Fixed Alarms",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = TextSecondary
+                    )
+                    Text(
+                        text = "Tap to save recurring times (e.g. 7:00 AM)",
+                        fontSize = 11.sp,
+                        color = TextMuted
+                    )
+                }
+            }
+            Icon(Icons.Default.AddCircleOutline, contentDescription = "Add", tint = AccentEmerald, modifier = Modifier.size(22.dp))
         }
     }
 }
@@ -979,12 +1225,12 @@ fun EmptyAlarmsState() {
             modifier = Modifier
                 .fillMaxWidth()
                 .border(1.dp, SurfaceCardBorder.copy(alpha = 0.5f), RoundedCornerShape(18.dp))
-                .padding(horizontal = 20.dp, vertical = 18.dp),
+                .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(38.dp)
                     .background(Color(0xFF1E293B), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
@@ -992,20 +1238,20 @@ fun EmptyAlarmsState() {
                     imageVector = Icons.Default.AlarmOff,
                     contentDescription = null,
                     tint = TextMuted,
-                    modifier = Modifier.size(22.dp)
+                    modifier = Modifier.size(20.dp)
                 )
             }
             Spacer(modifier = Modifier.width(14.dp))
             Column {
                 Text(
                     text = "No Active Alarms Scheduled",
-                    fontSize = 14.sp,
+                    fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = TextSecondary
                 )
                 Text(
-                    text = "Tap a preset below or set a custom duration",
-                    fontSize = 12.sp,
+                    text = "Toggle a saved alarm or tap a quick preset below",
+                    fontSize = 11.sp,
                     color = TextMuted
                 )
             }

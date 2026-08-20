@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:orientation="vertical"
+    android:padding="14dp">
+
+    <!-- Header (Tappable to launch app) -->
+    <LinearLayout
+        android:id="@+id/widget_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:src="@drawable/ic_launcher"
+            android:contentDescription="Quick Alarm App" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="Quick Alarm"
+            android:textColor="#FFF8FAFC"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widget_status_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="No Alarms"
+            android:textColor="#FF06B6D4"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="10dp"
+        android:background="#FF334155" />
+
+    <!-- 1-Tap Preset Buttons Row -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:id="@+id/widget_btn_1"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginEnd="4dp"
+            android:background="@drawable/widget_button_bg"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="6dp">
+
+            <TextView
+                android:id="@+id/widget_btn_1_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="+15m"
+                android:textColor="#FFF8FAFC"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/widget_btn_1_sub"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Break"
+                android:textColor="#FF94A3B8"
+                android:textSize="9sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/widget_btn_2"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="4dp"
+            android:background="@drawable/widget_button_bg"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="6dp">
+
+            <TextView
+                android:id="@+id/widget_btn_2_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="+30m"
+                android:textColor="#FFF8FAFC"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/widget_btn_2_sub"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Nap"
+                android:textColor="#FF94A3B8"
+                android:textSize="9sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/widget_btn_3"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="4dp"
+            android:background="@drawable/widget_button_bg"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="6dp">
+
+            <TextView
+                android:id="@+id/widget_btn_3_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="+1h"
+                android:textColor="#FFF8FAFC"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/widget_btn_3_sub"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Focus"
+                android:textColor="#FF94A3B8"
+                android:textSize="9sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/widget_btn_4"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginStart="4dp"
+            android:background="@drawable/widget_button_bg"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="6dp">
+
+            <TextView
+                android:id="@+id/widget_btn_4_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="+2h"
+                android:textColor="#FFF8FAFC"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/widget_btn_4_sub"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Work"
+                android:textColor="#FF94A3B8"
+                android:textSize="9sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+</LinearLayout>
