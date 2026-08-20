@@ -159,7 +159,7 @@ fun MainScreen() {
         if (enable) {
             val triggerTime = updated.getNextTriggerTimeMillis()
             val alarmItem = AlarmItem(
-                id = System.currentTimeMillis(), // Unique ID prevents LazyColumn key collision!
+                id = System.currentTimeMillis(),
                 triggerTimeMillis = triggerTime,
                 durationMinutes = ((triggerTime - System.currentTimeMillis()) / 60000L).toInt().coerceAtLeast(1),
                 label = updated.label
@@ -175,12 +175,13 @@ fun MainScreen() {
         }
     }
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = colors.background
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Brush.verticalGradient(colors.backgroundGradient))
     ) {
         Scaffold(
-            containerColor = colors.background
+            containerColor = Color.Transparent
         ) { paddingValues ->
             LazyColumn(
                 modifier = Modifier
@@ -254,8 +255,8 @@ fun MainScreen() {
                             Text(
                                 text = "ACTIVE ALARMS (${activeAlarms.size})",
                                 fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = colors.textMuted,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = colors.sectionHeaderColor,
                                 letterSpacing = 1.5.sp
                             )
                         }
@@ -264,6 +265,7 @@ fun MainScreen() {
                             Text(
                                 text = "Tap trash to cancel",
                                 fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
                                 color = colors.textSecondary
                             )
                         }
@@ -310,8 +312,8 @@ fun MainScreen() {
                             Text(
                                 text = "SAVED CLOCK ALARMS (${savedAlarms.size}/${AppSettings.MAX_SAVED_ALARMS})",
                                 fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = colors.textMuted,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = colors.sectionHeaderColor,
                                 letterSpacing = 1.5.sp
                             )
                         }
@@ -378,7 +380,7 @@ fun MainScreen() {
                     }
                 }
 
-                // 6. ONE-TAP PRESETS SECTION
+                // 6. ONE-TAP PRESETS SECTION (Darker, high-visibility header)
                 item {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -388,8 +390,8 @@ fun MainScreen() {
                         Text(
                             text = "ONE-TAP PRESETS (${presets.size})",
                             fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = colors.textMuted,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = colors.sectionHeaderColor,
                             letterSpacing = 1.5.sp
                         )
 
@@ -454,18 +456,18 @@ fun MainScreen() {
                     }
                 }
 
-                // 7. Custom Countdown Timer Button (Flawlessly Aligned!)
+                // 7. Custom Countdown Timer Button
                 item {
                     CustomCountdownButton(onClick = { showCustomDialog = true })
                 }
 
-                // 8. PREFERENCES SECTION (Sound & Snooze)
+                // 8. PREFERENCES SECTION (Darker, high-visibility header)
                 item {
                     Text(
                         text = "PREFERENCES & SETTINGS",
                         fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = colors.textMuted,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = colors.sectionHeaderColor,
                         letterSpacing = 1.5.sp
                     )
                 }

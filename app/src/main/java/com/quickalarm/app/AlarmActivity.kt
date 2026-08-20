@@ -90,6 +90,7 @@ class AlarmActivity : ComponentActivity() {
             )
         }
 
+        val alarmId = intent.getLongExtra("ALARM_ID", -1L)
         val alarmLabel = intent.getStringExtra("ALARM_LABEL") ?: "Quick Alarm"
         val snoozeMinutes = AppSettings.getSnoozeMinutes(this)
 
@@ -108,10 +109,16 @@ class AlarmActivity : ComponentActivity() {
                     snoozeMinutes = snoozeMinutes,
                     onDismiss = {
                         stopAlarmSoundAndVibration()
+                        if (alarmId != -1L) {
+                            AlarmScheduler.removeAlarm(this@AlarmActivity, alarmId)
+                        }
                         finish()
                     },
                     onSnooze = { minutesToSnooze ->
                         stopAlarmSoundAndVibration()
+                        if (alarmId != -1L) {
+                            AlarmScheduler.removeAlarm(this@AlarmActivity, alarmId)
+                        }
                         // Schedule customized snooze
                         val snoozeItem = AlarmItem(
                             id = System.currentTimeMillis(),
