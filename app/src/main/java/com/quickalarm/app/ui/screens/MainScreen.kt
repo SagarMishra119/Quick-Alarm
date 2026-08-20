@@ -31,7 +31,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -51,10 +50,7 @@ import java.util.Locale
 fun MainScreen() {
     val context = LocalContext.current
 
-    // Live clock ticker state
-    var currentTimeMillis by remember { mutableLongStateOf(System.currentTimeMillis()) }
-
-    // In-memory data states (loaded once, updated event-driven for 120 FPS buttery smooth performance)
+    // In-memory data states (event-driven, isolated from 1s tick for 120 FPS performance)
     var activeAlarms by remember { mutableStateOf(AlarmScheduler.getActiveAlarms(context)) }
     var presets by remember { mutableStateOf(AppSettings.getPresets(context)) }
     var savedAlarms by remember { mutableStateOf(AppSettings.getSavedAlarms(context)) }
@@ -97,16 +93,15 @@ fun MainScreen() {
         }
     }
 
-    // High performance ticker: Only updates currentTimeMillis every second (No disk I/O or JSON parsing on the main thread!)
+    // Isolated background cleanup: periodically removes expired alarms from in-memory list
     LaunchedEffect(Unit) {
         while (true) {
-            currentTimeMillis = System.currentTimeMillis()
-            // Clean in-memory filter for expired alarms
-            val unexpired = activeAlarms.filter { it.triggerTimeMillis > currentTimeMillis - 60_000 }
+            delay(5000)
+            val now = System.currentTimeMillis()
+            val unexpired = activeAlarms.filter { it.triggerTimeMillis > now - 60_000 }
             if (unexpired.size != activeAlarms.size) {
                 activeAlarms = unexpired
             }
-            delay(1000)
         }
     }
 
@@ -154,7 +149,7 @@ fun MainScreen() {
         scheduleNewAlarm(alarm)
     }
 
-    // Toggle Saved Alarm ON/OFF
+    // Toggle Saved Alarm ON/OFF (Generates unique active alarm ID to avoid collision)
     fun toggleSavedAlarm(saved: SavedAlarmItem, enable: Boolean) {
         val updated = saved.copy(isEnabled = enable)
         AppSettings.updateSavedAlarm(context, updated)
@@ -163,14 +158,15 @@ fun MainScreen() {
         if (enable) {
             val triggerTime = updated.getNextTriggerTimeMillis()
             val alarmItem = AlarmItem(
-                id = updated.id,
+                id = System.currentTimeMillis(), // Unique ID prevents LazyColumn key collision!
                 triggerTimeMillis = triggerTime,
-                durationMinutes = ((triggerTime - System.currentTimeMillis()) / 60000L).toInt(),
+                durationMinutes = ((triggerTime - System.currentTimeMillis()) / 60000L).toInt().coerceAtLeast(1),
                 label = updated.label
             )
             scheduleNewAlarm(alarmItem)
         } else {
-            val existing = activeAlarms.find { it.id == updated.id }
+            // Cancel any matching active alarm with this label
+            val existing = activeAlarms.find { it.label == saved.label }
             if (existing != null) {
                 AlarmScheduler.cancelAlarm(context, existing)
                 activeAlarms = AlarmScheduler.getActiveAlarms(context)
@@ -195,9 +191,9 @@ fun MainScreen() {
             ) {
                 item { Spacer(modifier = Modifier.height(6.dp)) }
 
-                // 1. Top Header & Live Clock with v3.0 Badge
+                // 1. Top Header & Live Clock with v3.1 Badge (Isolated Recomposition!)
                 item {
-                    HeaderClockSection(currentTimeMillis = currentTimeMillis)
+                    HeaderClockSection()
                 }
 
                 // 2. Permissions Banners (if needed)
@@ -279,14 +275,15 @@ fun MainScreen() {
                         EmptyAlarmsState()
                     }
                 } else {
-                    items(activeAlarms, key = { it.id }) { alarm ->
+                    // Unique namespaced key prevents collisions
+                    items(activeAlarms, key = { "active_${it.id}" }) { alarm ->
                         ActiveAlarmCard(
                             alarm = alarm,
                             onCancel = {
                                 AlarmScheduler.cancelAlarm(context, alarm)
                                 activeAlarms = AlarmScheduler.getActiveAlarms(context)
-                                // Also update saved alarm switch if it was a saved alarm
-                                val savedMatch = savedAlarms.find { it.id == alarm.id }
+                                // Also update saved alarm switch if matched
+                                val savedMatch = savedAlarms.find { it.label == alarm.label }
                                 if (savedMatch != null && savedMatch.isEnabled) {
                                     val updated = savedMatch.copy(isEnabled = false)
                                     AppSettings.updateSavedAlarm(context, updated)
@@ -298,7 +295,7 @@ fun MainScreen() {
                     }
                 }
 
-                // 5. SAVED CLOCK ALARMS SECTION (Up to 10 stored fixed time alarms)
+                // 5. SAVED CLOCK ALARMS SECTION (Fixed daily times, e.g. 7:00 AM)
                 item {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -313,7 +310,7 @@ fun MainScreen() {
                                 modifier = Modifier.size(18.dp)
                             )
                             Text(
-                                text = "SAVED ALARMS (${savedAlarms.size}/${AppSettings.MAX_SAVED_ALARMS})",
+                                text = "SAVED CLOCK ALARMS (${savedAlarms.size}/${AppSettings.MAX_SAVED_ALARMS})",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = TextMuted,
@@ -351,7 +348,8 @@ fun MainScreen() {
                         )
                     }
                 } else {
-                    items(savedAlarms, key = { it.id }) { saved ->
+                    // Unique namespaced key prevents collisions
+                    items(savedAlarms, key = { "saved_${it.id}" }) { saved ->
                         SavedAlarmRowCard(
                             saved = saved,
                             onToggle = { enable -> toggleSavedAlarm(saved, enable) },
@@ -362,7 +360,7 @@ fun MainScreen() {
                             onDelete = {
                                 AppSettings.deleteSavedAlarm(context, saved.id)
                                 savedAlarms = AppSettings.getSavedAlarms(context)
-                                val running = activeAlarms.find { it.id == saved.id }
+                                val running = activeAlarms.find { it.label == saved.label }
                                 if (running != null) {
                                     AlarmScheduler.cancelAlarm(context, running)
                                     activeAlarms = AlarmScheduler.getActiveAlarms(context)
@@ -449,9 +447,9 @@ fun MainScreen() {
                     }
                 }
 
-                // 7. Custom Duration Button
+                // 7. Custom Countdown Timer Button (Clear distinction from fixed clock alarms)
                 item {
-                    CustomAlarmButton(onClick = { showCustomDialog = true })
+                    CustomCountdownButton(onClick = { showCustomDialog = true })
                 }
 
                 // 8. PREFERENCES SECTION (Sound & Snooze)
@@ -496,7 +494,7 @@ fun MainScreen() {
 
         // --- ALL DIALOGS ---
 
-        // Custom Duration Dialog
+        // Custom Countdown Timer Dialog
         if (showCustomDialog) {
             CustomDurationDialog(
                 onDismiss = { showCustomDialog = false },
@@ -597,13 +595,13 @@ fun MainScreen() {
                     showSavedAlarmDialog = false
                     savedAlarmToEdit = null
 
-                    // If enabled, schedule the alarm
+                    // If enabled, schedule the alarm with a unique ID
                     if (savedAlarm.isEnabled) {
                         val triggerTime = savedAlarm.getNextTriggerTimeMillis()
                         val alarmItem = AlarmItem(
-                            id = savedAlarm.id,
+                            id = System.currentTimeMillis(),
                             triggerTimeMillis = triggerTime,
-                            durationMinutes = ((triggerTime - System.currentTimeMillis()) / 60000L).toInt(),
+                            durationMinutes = ((triggerTime - System.currentTimeMillis()) / 60000L).toInt().coerceAtLeast(1),
                             label = savedAlarm.label
                         )
                         scheduleNewAlarm(alarmItem)
@@ -615,8 +613,22 @@ fun MainScreen() {
     }
 }
 
+/**
+ * Isolated Clock Section:
+ * Live ticker runs strictly inside this Composable so the parent MainScreen LazyColumn
+ * does NOT recompose every second. Ensures 120 FPS buttery smooth scrolling!
+ */
 @Composable
-fun HeaderClockSection(currentTimeMillis: Long) {
+fun HeaderClockSection() {
+    var currentTimeMillis by remember { mutableLongStateOf(System.currentTimeMillis()) }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            currentTimeMillis = System.currentTimeMillis()
+            delay(1000)
+        }
+    }
+
     val timeFormat = remember { SimpleDateFormat("h:mm:ss a", Locale.getDefault()) }
     val dateFormat = remember { SimpleDateFormat("EEEE, MMMM d", Locale.getDefault()) }
 
@@ -671,7 +683,7 @@ fun HeaderClockSection(currentTimeMillis: Long) {
                                     .padding(horizontal = 5.dp, vertical = 1.dp)
                             ) {
                                 Text(
-                                    text = "v3.0",
+                                    text = "v3.1",
                                     fontSize = 9.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White
@@ -829,13 +841,13 @@ fun EmptySavedAlarmsState(
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text(
-                        text = "No Saved Fixed Alarms",
+                        text = "No Saved Clock Alarms",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = TextSecondary
                     )
                     Text(
-                        text = "Tap to save recurring times (e.g. 7:00 AM)",
+                        text = "Tap to save daily alarm times (e.g. 7:00 AM)",
                         fontSize = 11.sp,
                         color = TextMuted
                     )
@@ -991,7 +1003,7 @@ fun PreferenceCard(
 }
 
 @Composable
-fun CustomAlarmButton(
+fun CustomCountdownButton(
     onClick: () -> Unit
 ) {
     Card(
@@ -1035,7 +1047,7 @@ fun CustomAlarmButton(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.AlarmAdd,
+                            imageVector = Icons.Default.HourglassTop,
                             contentDescription = null,
                             tint = Color.White,
                             modifier = Modifier.size(20.dp)
@@ -1044,13 +1056,13 @@ fun CustomAlarmButton(
                     Spacer(modifier = Modifier.width(14.dp))
                     Column {
                         Text(
-                            text = "+ Custom Duration",
+                            text = "+ Custom Countdown Timer",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
                         Text(
-                            text = "Set exact hours & minutes",
+                            text = "Set exact duration from now (e.g. +45m)",
                             fontSize = 11.sp,
                             color = TextSecondary
                         )
@@ -1063,7 +1075,7 @@ fun CustomAlarmButton(
                         .padding(horizontal = 12.dp, vertical = 6.dp)
                 ) {
                     Text(
-                        text = "Pick Time",
+                        text = "Pick Timer",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = SecondaryCyan
@@ -1135,11 +1147,27 @@ fun ScheduledConfirmationCard(
     }
 }
 
+/**
+ * Isolated Active Alarm Card:
+ * Has its own internal 1s ticker so the countdown ("14m 20s remaining") updates
+ * without triggering a recomposition of the rest of MainScreen!
+ */
 @Composable
 fun ActiveAlarmCard(
     alarm: AlarmItem,
     onCancel: () -> Unit
 ) {
+    var remainingText by remember(alarm.triggerTimeMillis) {
+        mutableStateOf(AlarmScheduler.formatRemainingTime(alarm.triggerTimeMillis))
+    }
+
+    LaunchedEffect(alarm.triggerTimeMillis) {
+        while (true) {
+            remainingText = AlarmScheduler.formatRemainingTime(alarm.triggerTimeMillis)
+            delay(1000)
+        }
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -1188,7 +1216,7 @@ fun ActiveAlarmCard(
                         color = SecondaryCyan
                     )
                     Text(
-                        text = AlarmScheduler.formatRemainingTime(alarm.triggerTimeMillis),
+                        text = remainingText,
                         fontSize = 11.sp,
                         color = AccentAmber
                     )

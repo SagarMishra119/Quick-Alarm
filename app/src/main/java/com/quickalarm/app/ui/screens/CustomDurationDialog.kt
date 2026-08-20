@@ -101,8 +101,8 @@ fun CustomDurationDialog(
                         }
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            text = "Custom Duration",
-                            fontSize = 19.sp,
+                            text = "Custom Countdown Timer",
+                            fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             color = TextPrimary
                         )
@@ -330,7 +330,7 @@ fun CustomDurationDialog(
                     )
                 ) {
                     Text(
-                        text = "Schedule Custom Alarm",
+                        text = "Start Countdown Alarm",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White

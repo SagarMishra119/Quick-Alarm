@@ -31,6 +31,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.quickalarm.app.model.SoundItem
 import com.quickalarm.app.ui.theme.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Composable
 fun SoundPickerDialog(
@@ -43,8 +45,19 @@ fun SoundPickerDialog(
     var playingSoundId by remember { mutableStateOf<String?>(null) }
     var mediaPlayer by remember { mutableStateOf<MediaPlayer?>(null) }
 
-    // Query all device system alarm tones asynchronously on first compose
-    val installedSounds = remember { SoundItem.getInstalledDeviceAlarmSounds(context) }
+    var installedSounds by remember { mutableStateOf(SoundItem.getDefaultSystemSounds()) }
+    var isLoadingSounds by remember { mutableStateOf(true) }
+
+    // Query system alarm sounds in the background to guarantee zero main-thread UI lag!
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) {
+            val sounds = SoundItem.getInstalledDeviceAlarmSounds(context)
+            withContext(Dispatchers.Main) {
+                installedSounds = sounds
+                isLoadingSounds = false
+            }
+        }
+    }
 
     fun stopAudio() {
         try {
@@ -180,7 +193,7 @@ fun SoundPickerDialog(
                                 color = TextPrimary
                             )
                             Text(
-                                text = "${installedSounds.size} Device Sounds Available",
+                                text = if (isLoadingSounds) "Loading sounds..." else "${installedSounds.size} Device Sounds Available",
                                 fontSize = 11.sp,
                                 color = TextSecondary
                             )
