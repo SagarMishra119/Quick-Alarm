@@ -39,39 +39,39 @@ data class AppPalette(
     val customButtonBg: List<Color>
 )
 
-// Dark Palette (Sleek Lighter-to-Dark Transition)
+// Dark Palette (Noticeably Lighter Slate Background with High-Contrast Pure White Section Headers)
 val DarkAppPalette = AppPalette(
     isDark = true,
-    background = Color(0xFF111827),
+    background = Color(0xFF1E293B),
     backgroundGradient = listOf(
-        Color(0xFF1E293B), // Lighter slate top
-        Color(0xFF111827), // Mid slate
-        Color(0xFF0B0F19)  // Deep soft dark bottom
+        Color(0xFF293548), // Lighter slate top
+        Color(0xFF1E293B), // Mid soft slate
+        Color(0xFF141D2B)  // Comfortable dark bottom
     ),
-    surface = Color(0xFF1F2937),
-    surfaceBorder = Color(0xFF374151),
-    cardBackground = Color(0xFF1F2937),
-    cardBackgroundElevated = Color(0xFF1E293B),
-    sectionHeaderColor = Color(0xFF94A3B8),
-    textPrimary = Color(0xFFF9FAFB),
-    textSecondary = Color(0xFF9CA3AF),
-    textMuted = Color(0xFF6B7280),
-    chipBackground = Color(0xFF374151),
-    headerGradient = listOf(Color(0xFF1E293B), Color(0xFF0F172A)),
-    customButtonBg = listOf(Color(0xFF1E1B4B), Color(0xFF0F172A), Color(0xFF1E293B))
+    surface = Color(0xFF243042),
+    surfaceBorder = Color(0xFF3E4D63),
+    cardBackground = Color(0xFF243042),
+    cardBackgroundElevated = Color(0xFF2C3B50),
+    sectionHeaderColor = Color(0xFFFFFFFF), // Crisp pure white for maximum header visibility
+    textPrimary = Color(0xFFF8FAFC),
+    textSecondary = Color(0xFFCBD5E1),
+    textMuted = Color(0xFF94A3B8),
+    chipBackground = Color(0xFF334155),
+    headerGradient = listOf(Color(0xFF2C3B50), Color(0xFF1E293B)),
+    customButtonBg = listOf(Color(0xFF2E266D), Color(0xFF1E293B), Color(0xFF243042))
 )
 
-// Light Palette (Gradient Light Blue with High-Contrast Section Headers)
+// Light Palette (Vibrant Sky-Blue Gradient with High-Contrast Deep Slate Section Headers)
 val LightAppPalette = AppPalette(
     isDark = false,
     background = Color(0xFFF0F9FF),
     backgroundGradient = listOf(
-        Color(0xFFE0F2FE), // Soft sky light blue top
-        Color(0xFFF0F9FF), // Pale light blue middle
-        Color(0xFFF8FAFC)  // Clean off-white bottom
+        Color(0xFFBAE6FD), // Sky blue top
+        Color(0xFFE0F2FE), // Soft light blue middle
+        Color(0xFFF0F9FF)  // Clean light blue-white bottom
     ),
     surface = Color(0xFFFFFFFF),
-    surfaceBorder = Color(0xFFE2E8F0),
+    surfaceBorder = Color(0xFFCBD5E1),
     cardBackground = Color(0xFFFFFFFF),
     cardBackgroundElevated = Color(0xFFF1F5F9),
     sectionHeaderColor = Color(0xFF0F172A), // Bold deep slate for maximum visibility

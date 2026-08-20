@@ -263,8 +263,8 @@ fun PresetManageDialog(
                         colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigo)
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("+ Add Preset", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Add Preset", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     }
                 }
             }

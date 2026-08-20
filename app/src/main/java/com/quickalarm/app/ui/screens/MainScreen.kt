@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -192,7 +193,7 @@ fun MainScreen() {
             ) {
                 item { Spacer(modifier = Modifier.height(6.dp)) }
 
-                // 1. Top Header & Live Clock with v3.2 Badge (Isolated Recomposition!)
+                // 1. Top Header & Live Clock with v3.3 Badge (Isolated Recomposition!)
                 item {
                     HeaderClockSection()
                 }
@@ -338,7 +339,7 @@ fun MainScreen() {
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    "+ Add Alarm",
+                                    "Add Alarm",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = if (colors.isDark) Color.White else Color(0xFF065F46)
@@ -690,7 +691,7 @@ fun HeaderClockSection() {
                                     .padding(horizontal = 5.dp, vertical = 1.dp)
                             ) {
                                 Text(
-                                    text = "v3.2",
+                                    text = "v3.3",
                                     fontSize = 9.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White
@@ -869,6 +870,10 @@ fun EmptySavedAlarmsState(
     }
 }
 
+/**
+ * PresetAlarmButton:
+ * Clean, modern 1-tap alarm button with zero overlap and elegant single icon badge!
+ */
 @Composable
 fun PresetAlarmButton(
     preset: PresetItem,
@@ -904,7 +909,7 @@ fun PresetAlarmButton(
                     ),
                     shape = RoundedCornerShape(20.dp)
                 )
-                .padding(16.dp)
+                .padding(14.dp)
         ) {
             Column(
                 modifier = Modifier.fillMaxSize(),
@@ -917,30 +922,36 @@ fun PresetAlarmButton(
                 ) {
                     Text(
                         text = preset.title,
-                        fontSize = 22.sp,
+                        fontSize = 20.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = colors.textPrimary
+                        color = colors.textPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
                     )
+                    Spacer(modifier = Modifier.width(6.dp))
                     Box(
                         modifier = Modifier
-                            .size(28.dp)
-                            .background(gradient[0].copy(alpha = 0.2f), CircleShape),
+                            .size(26.dp)
+                            .background(gradient[0].copy(alpha = 0.22f), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.AddAlert,
+                            imageVector = Icons.Default.Alarm,
                             contentDescription = null,
                             tint = gradient[0],
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(15.dp)
                         )
                     }
                 }
 
                 Text(
                     text = preset.subtitle,
-                    fontSize = 12.sp,
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.Medium,
-                    color = colors.textSecondary
+                    color = colors.textSecondary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
