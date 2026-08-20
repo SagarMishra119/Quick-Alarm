@@ -83,7 +83,6 @@ QuickAlarm/
 │   └── build.gradle.kts                      # App dependencies & SDK versioning
 ├── ss/                                       # App screenshots & promotional showcase assets
 ├── CHANGELOG.md                              # Detailed version-by-version changelog
-├── PLAYSTORE_LISTING.md                      # Google Play Store listing copy & form answers
 ├── PRIVACY_POLICY.md                         # 100% Offline Privacy Policy
 ├── README.md                                 # Project documentation
 ├── build.gradle.kts                          # Root build configuration
