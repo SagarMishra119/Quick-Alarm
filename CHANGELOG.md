@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [3.4.1] - 2026-08-21
+
+### Changed
+- **Target SDK 35 (Android 15):** Upgraded `compileSdk` and `targetSdk` to API Level 35 to fully comply with Google Play's latest security, privacy, and performance standards.
+- **Version Code Bump:** Incremented `versionCode` to `8` and `versionName` to `3.4.1` for production release.
+
+---
+
 ## [3.4.0] - 2026-08-20
 
 ### Added
