@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [Beta Testing] - 2026-08-22
+
+### Ongoing Verification & Closed Testing Phase
+- **Google Play Closed Testing Deployment:** Successfully rolled out v3.4.1 (Build 8) targeting Android 15 (API Level 35) to closed beta testers.
+- **Hardware & Multi-OEM Testing:** Verified foreground alarm service (`AlarmSoundService`) reliability, audio loop playback, and full-screen intent wake-locks across diverse Android devices (Samsung OneUI, Xiaomi HyperOS/MIUI, OnePlus OxygenOS, and Google Pixel).
+- **Tester Feedback Analysis:** Monitored background audio persistence, real-time snooze synchronization, and zero-overlap stepper row responsiveness.
+- **Battery & Doze Mode Compliance:** Confirmed exact alarm trigger precision under deep Doze mode without battery drain.
+
+---
+
 ## [3.4.1] - 2026-08-21
 
 ### Changed
