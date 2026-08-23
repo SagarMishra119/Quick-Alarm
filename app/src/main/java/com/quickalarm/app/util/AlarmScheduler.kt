@@ -209,13 +209,49 @@ object AlarmScheduler {
     }
 
     /**
-     * Clears any legacy status drawer notification cards.
-     * System status bar icon is handled automatically by Android OS via AlarmManager.setAlarmClock().
+     * Updates the persistent status bar alarm indicator icon and minimal reminder.
+     * Automatically clears when all alarms are inactive.
      */
     fun updateActiveAlarmIndicator(context: Context) {
         try {
             val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.cancel(NOTIF_ID_STATUS)
+            val activeAlarms = getActiveAlarms(context)
+            val now = System.currentTimeMillis()
+            val nextAlarm = activeAlarms.filter { it.triggerTimeMillis > now }.minByOrNull { it.triggerTimeMillis }
+
+            if (nextAlarm != null) {
+                createStatusNotificationChannel(context)
+
+                val openAppIntent = Intent(context, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                }
+                val pendingIntent = PendingIntent.getActivity(
+                    context,
+                    0,
+                    openAppIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+
+                val formattedTime = formatTime(nextAlarm.triggerTimeMillis)
+                val remainingTime = formatRemainingTime(nextAlarm.triggerTimeMillis)
+
+                val notification = NotificationCompat.Builder(context, STATUS_CHANNEL_ID)
+                    .setSmallIcon(R.drawable.ic_launcher_foreground)
+                    .setContentTitle("Quick Alarm Active")
+                    .setContentText("Next alarm at $formattedTime ($remainingTime)")
+                    .setSubText(nextAlarm.label)
+                    .setPriority(NotificationCompat.PRIORITY_LOW)
+                    .setCategory(NotificationCompat.CATEGORY_STATUS)
+                    .setOngoing(true)
+                    .setSilent(true)
+                    .setAutoCancel(false)
+                    .setContentIntent(pendingIntent)
+                    .build()
+
+                notificationManager.notify(NOTIF_ID_STATUS, notification)
+            } else {
+                notificationManager.cancel(NOTIF_ID_STATUS)
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }

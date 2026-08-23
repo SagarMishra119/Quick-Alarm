@@ -32,12 +32,13 @@ import com.quickalarm.app.ui.theme.PrimaryIndigo
 import com.quickalarm.app.ui.theme.SecondaryCyan
 import kotlinx.coroutines.launch
 
+private const val VIRTUAL_MULTIPLIER = 1000
+
 /**
- * 🎰 Casino-Style 3-Column Time Tumbler Roller Composable.
- * Features 3 kinetic vertical wheels for Hours (00-23), Minutes (00-59), and Seconds (00-59).
- * Styled with frosted smoked glass, vibrant neon laser sightlines, and smooth snapping physics.
+ * 🎰 Casino-Style Infinite Looping 3-Column Time Tumbler Roller.
+ * Features 3 continuous 360° virtual reels for Hours (00-23), Minutes (00-59), and Seconds (00-59).
+ * Fully centralized with pixel-perfect alignment, smooth inertia snapping, and glowing laser magnifier lens.
  */
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CasinoTimeTumbler(
     hours: Int,
@@ -49,33 +50,51 @@ fun CasinoTimeTumbler(
     val colors = AppTheme.colors
     val coroutineScope = rememberCoroutineScope()
 
-    val hourState = rememberLazyListState(initialFirstVisibleItemIndex = hours)
-    val minuteState = rememberLazyListState(initialFirstVisibleItemIndex = minutes)
-    val secondState = rememberLazyListState(initialFirstVisibleItemIndex = seconds)
+    val hourBaseOffset = remember { (VIRTUAL_MULTIPLIER / 2) * 24 }
+    val minuteBaseOffset = remember { (VIRTUAL_MULTIPLIER / 2) * 60 }
+    val secondBaseOffset = remember { (VIRTUAL_MULTIPLIER / 2) * 60 }
 
-    // Sync programmatically when hours/minutes/seconds change externally (e.g. quick chips)
+    val hourState = rememberLazyListState(initialFirstVisibleItemIndex = hourBaseOffset + (hours % 24))
+    val minuteState = rememberLazyListState(initialFirstVisibleItemIndex = minuteBaseOffset + (minutes % 60))
+    val secondState = rememberLazyListState(initialFirstVisibleItemIndex = secondBaseOffset + (seconds % 60))
+
+    // Derive current selected values from first visible snapped items
+    val currentSelectedHour by remember { derivedStateOf { hourState.firstVisibleItemIndex % 24 } }
+    val currentSelectedMinute by remember { derivedStateOf { minuteState.firstVisibleItemIndex % 60 } }
+    val currentSelectedSecond by remember { derivedStateOf { secondState.firstVisibleItemIndex % 60 } }
+
+    // Emit live changes when snapped state updates
+    LaunchedEffect(currentSelectedHour, currentSelectedMinute, currentSelectedSecond) {
+        onTimeChange(currentSelectedHour, currentSelectedMinute, currentSelectedSecond)
+    }
+
+    // Programmatic sync when values change externally (e.g. quick chips)
     LaunchedEffect(hours) {
-        if (!hourState.isScrollInProgress && hourState.firstVisibleItemIndex != hours) {
-            hourState.animateScrollToItem(hours.coerceIn(0, 23))
+        val targetVal = hours % 24
+        if (!hourState.isScrollInProgress && currentSelectedHour != targetVal) {
+            val currentIdx = hourState.firstVisibleItemIndex
+            val currentMod = currentIdx % 24
+            val delta = targetVal - currentMod
+            hourState.animateScrollToItem(currentIdx + delta)
         }
     }
     LaunchedEffect(minutes) {
-        if (!minuteState.isScrollInProgress && minuteState.firstVisibleItemIndex != minutes) {
-            minuteState.animateScrollToItem(minutes.coerceIn(0, 59))
+        val targetVal = minutes % 60
+        if (!minuteState.isScrollInProgress && currentSelectedMinute != targetVal) {
+            val currentIdx = minuteState.firstVisibleItemIndex
+            val currentMod = currentIdx % 60
+            val delta = targetVal - currentMod
+            minuteState.animateScrollToItem(currentIdx + delta)
         }
     }
     LaunchedEffect(seconds) {
-        if (!secondState.isScrollInProgress && secondState.firstVisibleItemIndex != seconds) {
-            secondState.animateScrollToItem(seconds.coerceIn(0, 59))
+        val targetVal = seconds % 60
+        if (!secondState.isScrollInProgress && currentSelectedSecond != targetVal) {
+            val currentIdx = secondState.firstVisibleItemIndex
+            val currentMod = currentIdx % 60
+            val delta = targetVal - currentMod
+            secondState.animateScrollToItem(currentIdx + delta)
         }
-    }
-
-    // Monitor scroll state and emit updates
-    LaunchedEffect(hourState.firstVisibleItemIndex, minuteState.firstVisibleItemIndex, secondState.firstVisibleItemIndex) {
-        val h = hourState.firstVisibleItemIndex.coerceIn(0, 23)
-        val m = minuteState.firstVisibleItemIndex.coerceIn(0, 59)
-        val s = secondState.firstVisibleItemIndex.coerceIn(0, 59)
-        onTimeChange(h, m, s)
     }
 
     val quickChips = listOf(
@@ -91,115 +110,120 @@ fun CasinoTimeTumbler(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier.fillMaxWidth()
     ) {
-        // Main Casino Tumbler Housing Box
+        // Main Casino Tumbler Housing Frame
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(180.dp)
+                .height(156.dp)
                 .clip(RoundedCornerShape(22.dp))
                 .background(
-                    if (colors.isDark) Color(0xFF0F172A).copy(alpha = 0.45f) else Color(0xFFF1F5F9).copy(alpha = 0.65f)
+                    if (colors.isDark) Color(0xFF0F172A).copy(alpha = 0.50f) else Color(0xFFF1F5F9).copy(alpha = 0.70f)
                 )
                 .border(
                     width = 1.2.dp,
                     brush = Brush.verticalGradient(
                         listOf(
-                            SecondaryCyan.copy(alpha = 0.6f),
-                            colors.surfaceBorder.copy(alpha = 0.4f),
-                            AccentAmber.copy(alpha = 0.5f)
+                            SecondaryCyan.copy(alpha = 0.55f),
+                            colors.surfaceBorder.copy(alpha = 0.40f),
+                            AccentAmber.copy(alpha = 0.55f)
                         )
                     ),
                     shape = RoundedCornerShape(22.dp)
                 ),
             contentAlignment = Alignment.Center
         ) {
-            // Horizontal Active Magnifier Lens (Center Row)
+            // Horizontal Center Laser Magnifier Lens (Active Row)
             Box(
                 modifier = Modifier
-                    .fillMaxWidth(0.94f)
-                    .height(56.dp)
-                    .clip(RoundedCornerShape(14.dp))
+                    .fillMaxWidth(0.96f)
+                    .height(46.dp)
+                    .clip(RoundedCornerShape(12.dp))
                     .background(
-                        if (colors.isDark) Color(0xFF1E293B).copy(alpha = 0.70f) else Color(0xFFFFFFFF).copy(alpha = 0.85f)
+                        if (colors.isDark) Color(0xFF1E293B).copy(alpha = 0.75f) else Color(0xFFFFFFFF).copy(alpha = 0.90f)
                     )
                     .border(
                         1.dp,
                         Brush.horizontalGradient(
                             listOf(
-                                SecondaryCyan.copy(alpha = 0.5f),
-                                PrimaryIndigo.copy(alpha = 0.3f),
-                                AccentAmber.copy(alpha = 0.5f)
+                                SecondaryCyan.copy(alpha = 0.6f),
+                                PrimaryIndigo.copy(alpha = 0.35f),
+                                AccentAmber.copy(alpha = 0.6f)
                             )
                         ),
-                        RoundedCornerShape(14.dp)
+                        RoundedCornerShape(12.dp)
                     )
             )
 
-            // 3 Vertical Reels Row
+            // 3 Looping Wheels in Perfect Alignment
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp),
+                    .padding(horizontal = 8.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Column 1: HOURS (00-23)
-                TumblerReelColumn(
+                // Column 1: HOURS (00-23 looping)
+                LoopingTumblerReel(
                     title = "HOURS",
                     count = 24,
                     state = hourState,
+                    selectedModValue = currentSelectedHour,
                     accentColor = SecondaryCyan,
                     modifier = Modifier.weight(1f)
                 )
 
-                // Divider Colon
+                // Colon Separator
                 Text(
                     text = ":",
-                    fontSize = 24.sp,
+                    fontSize = 22.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = SecondaryCyan.copy(alpha = 0.75f),
-                    modifier = Modifier.padding(horizontal = 2.dp)
+                    color = SecondaryCyan.copy(alpha = 0.85f),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.width(14.dp)
                 )
 
-                // Column 2: MINUTES (00-59)
-                TumblerReelColumn(
+                // Column 2: MINUTES (00-59 looping)
+                LoopingTumblerReel(
                     title = "MINS",
                     count = 60,
                     state = minuteState,
+                    selectedModValue = currentSelectedMinute,
                     accentColor = SecondaryCyan,
                     modifier = Modifier.weight(1f)
                 )
 
-                // Divider Colon
+                // Colon Separator
                 Text(
                     text = ":",
-                    fontSize = 24.sp,
+                    fontSize = 22.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = AccentAmber.copy(alpha = 0.75f),
-                    modifier = Modifier.padding(horizontal = 2.dp)
+                    color = AccentAmber.copy(alpha = 0.85f),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.width(14.dp)
                 )
 
-                // Column 3: SECONDS (00-59)
-                TumblerReelColumn(
+                // Column 3: SECONDS (00-59 looping)
+                LoopingTumblerReel(
                     title = "SECS",
                     count = 60,
                     state = secondState,
+                    selectedModValue = currentSelectedSecond,
                     accentColor = AccentAmber,
                     modifier = Modifier.weight(1f)
                 )
             }
 
-            // Top & Bottom Gradient Fog Overlay for 3D Roller Cylindrical Depth
+            // Top & Bottom Gradient Fog Overlays for 3D Roller Curvature
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
                         Brush.verticalGradient(
                             listOf(
-                                (if (colors.isDark) Color(0xFF0F172A) else Color(0xFFF1F5F9)).copy(alpha = 0.75f),
+                                (if (colors.isDark) Color(0xFF0F172A) else Color(0xFFF1F5F9)).copy(alpha = 0.85f),
                                 Color.Transparent,
                                 Color.Transparent,
-                                (if (colors.isDark) Color(0xFF0F172A) else Color(0xFFF1F5F9)).copy(alpha = 0.75f)
+                                (if (colors.isDark) Color(0xFF0F172A) else Color(0xFFF1F5F9)).copy(alpha = 0.85f)
                             )
                         )
                     )
@@ -208,14 +232,17 @@ fun CasinoTimeTumbler(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Quick Jump Chips Row
+        // Quick Jump Preset Chips Row
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             quickChips.forEach { (timeTriple, label) ->
-                val isCurrent = hours == timeTriple.first && minutes == timeTriple.second && seconds == timeTriple.third
+                val isCurrent = currentSelectedHour == timeTriple.first &&
+                        currentSelectedMinute == timeTriple.second &&
+                        currentSelectedSecond == timeTriple.third
+
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
@@ -231,9 +258,14 @@ fun CasinoTimeTumbler(
                         )
                         .clickable {
                             coroutineScope.launch {
-                                hourState.animateScrollToItem(timeTriple.first)
-                                minuteState.animateScrollToItem(timeTriple.second)
-                                secondState.animateScrollToItem(timeTriple.third)
+                                val curH = hourState.firstVisibleItemIndex
+                                hourState.animateScrollToItem(curH + (timeTriple.first - (curH % 24)))
+
+                                val curM = minuteState.firstVisibleItemIndex
+                                minuteState.animateScrollToItem(curM + (timeTriple.second - (curM % 60)))
+
+                                val curS = secondState.firstVisibleItemIndex
+                                secondState.animateScrollToItem(curS + (timeTriple.third - (curS % 60)))
                             }
                         }
                         .padding(vertical = 6.dp)
@@ -251,20 +283,22 @@ fun CasinoTimeTumbler(
 }
 
 /**
- * Single vertical rolling tumbler reel with momentum snapping.
+ * High-precision infinite looping reel with vertical snapping and exact geometric centering.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun TumblerReelColumn(
+private fun LoopingTumblerReel(
     title: String,
     count: Int,
     state: LazyListState,
+    selectedModValue: Int,
     accentColor: Color,
     modifier: Modifier = Modifier,
-    itemHeight: Dp = 56.dp
+    itemHeight: Dp = 44.dp
 ) {
     val flingBehavior = rememberSnapFlingBehavior(lazyListState = state)
     val colors = AppTheme.colors
+    val totalVirtualCount = count * VIRTUAL_MULTIPLIER
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -282,22 +316,27 @@ private fun TumblerReelColumn(
         LazyColumn(
             state = state,
             flingBehavior = flingBehavior,
-            contentPadding = PaddingValues(vertical = 56.dp),
+            contentPadding = PaddingValues(vertical = itemHeight),
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(itemHeight * 3)
         ) {
-            items(count) { index ->
-                val isSelected = state.firstVisibleItemIndex == index
+            items(
+                count = totalVirtualCount,
+                key = { index -> index }
+            ) { index ->
+                val modValue = index % count
+                val isSelected = modValue == selectedModValue
+
                 val scale by animateFloatAsState(
-                    targetValue = if (isSelected) 1.15f else 0.82f,
-                    animationSpec = tween(120),
+                    targetValue = if (isSelected) 1.15f else 0.80f,
+                    animationSpec = tween(100),
                     label = "reelScale"
                 )
                 val alphaVal by animateFloatAsState(
-                    targetValue = if (isSelected) 1f else 0.35f,
-                    animationSpec = tween(120),
+                    targetValue = if (isSelected) 1f else 0.30f,
+                    animationSpec = tween(100),
                     label = "reelAlpha"
                 )
 
@@ -308,9 +347,9 @@ private fun TumblerReelColumn(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = String.format("%02d", index),
-                        fontSize = if (isSelected) 26.sp else 20.sp,
-                        fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
+                        text = String.format("%02d", modValue),
+                        fontSize = if (isSelected) 24.sp else 18.sp,
+                        fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.SemiBold,
                         color = if (isSelected) accentColor else colors.textPrimary,
                         textAlign = TextAlign.Center,
                         modifier = Modifier

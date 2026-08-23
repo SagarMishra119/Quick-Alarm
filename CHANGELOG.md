@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [3.5.3] - 2026-08-23
+
+### Fixed & Improved
+- **🎰 Infinite Looping Casino Reels:** Re-architected `CasinoTimeTumbler.kt` with a continuous 360° virtual circular loop—scrolling past `59` or `23` wraps around seamlessly to `00` without hitting any end walls.
+- **🎯 Pixel-Perfect Alignment & Centralization:** Fixed vertical snapping and geometric alignment across Hours, Minutes, and Seconds columns to ensure values align with the center glowing magnifier lens and divider colons.
+- **📌 Persistent Status Bar Alarm Icon:** Restored non-intrusive, silent status indicator channel ensuring the top status bar app icon remains visible when alarms are armed across all Android OEM devices.
+
+### Changed
+- **Version Code Bump:** Incremented `versionCode` to `12` and `versionName` to `3.5.3`.
+
+---
+
 ## [3.5.2] - 2026-08-23
 
 ### Added
