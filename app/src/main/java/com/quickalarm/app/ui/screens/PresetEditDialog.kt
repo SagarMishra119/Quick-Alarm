@@ -25,8 +25,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.quickalarm.app.model.PresetItem
-import com.quickalarm.app.ui.components.LiquidClockDial
-import com.quickalarm.app.ui.components.LiquidSecondsSelectorBar
+import com.quickalarm.app.ui.components.CasinoTimeTumbler
 import com.quickalarm.app.ui.theme.*
 
 @Composable
@@ -65,7 +64,7 @@ fun PresetEditDialog(
         mutableStateOf(presetToEdit != null && presetToEdit.title != formatTitle(presetToEdit.minutes / 60, presetToEdit.minutes % 60, 0))
     }
 
-    fun onTimeChanged(newHours: Int, newMinutes: Int, newSeconds: Int = seconds) {
+    fun onTimeChanged(newHours: Int, newMinutes: Int, newSeconds: Int) {
         hours = newHours
         minutes = newMinutes
         seconds = newSeconds
@@ -111,7 +110,7 @@ fun PresetEditDialog(
                 .padding(vertical = 6.dp),
             shape = RoundedCornerShape(26.dp),
             colors = CardDefaults.cardColors(
-                containerColor = if (colors.isDark) Color(0xFF111827).copy(alpha = 0.88f) else Color(0xFFFFFFFF).copy(alpha = 0.92f)
+                containerColor = if (colors.isDark) Color(0xFF111827).copy(alpha = 0.90f) else Color(0xFFFFFFFF).copy(alpha = 0.94f)
             ),
             border = androidx.compose.foundation.BorderStroke(
                 1.dp,
@@ -174,56 +173,16 @@ fun PresetEditDialog(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Large Digital Duration Readout
-                Text(
-                    text = "${String.format("%02d", hours)}h : ${String.format("%02d", minutes)}m : ${String.format("%02d", seconds)}s",
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = PrimaryIndigo,
-                    letterSpacing = 1.sp
-                )
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Asymmetric Dual Dials (Concentric 24-Hour Dial + Compact Minute Dial)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Concentric 24-Hour Dial
-                    LiquidClockDial(
-                        selectedValue = hours,
-                        range = 0..23,
-                        isHourDial = true,
-                        is24HourPreset = true,
-                        title = "Hours (0-23h)",
-                        dialRadiusDp = 72,
-                        accentColor = PrimaryIndigo,
-                        onValueChange = { onTimeChanged(it, minutes, seconds) }
-                    )
-
-                    // Compact Minute Dial
-                    LiquidClockDial(
-                        selectedValue = minutes,
-                        range = 0..59,
-                        isHourDial = false,
-                        title = "Minutes (0-59m)",
-                        dialRadiusDp = 58,
-                        accentColor = PrimaryIndigo,
-                        onValueChange = { onTimeChanged(hours, it, seconds) }
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Precision Seconds Selector Bar
-                LiquidSecondsSelectorBar(
+                // 🎰 Vibrant Casino Time Tumbler Roller
+                CasinoTimeTumbler(
+                    hours = hours,
+                    minutes = minutes,
                     seconds = seconds,
-                    onSecondsChange = { onTimeChanged(hours, minutes, it) }
+                    onTimeChange = { h, m, s -> onTimeChanged(h, m, s) },
+                    modifier = Modifier.fillMaxWidth()
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 // Title Input with Sync Button
                 OutlinedTextField(

@@ -19,10 +19,11 @@ Quick Alarm is designed for instant action—schedule alarms in a single tap wit
 
 * **🌙 Aesthetic Moonlit Night Sky (Dark Mode):** HD full moon & starry night background with frosted glassmorphism cards and pure white high-contrast text.
 * **☀️ Early Morning Dawn & Sunrise (Light Mode):** Sky-blue atmosphere with a radiant golden dawn sun glow and bold deep-slate headings.
-* **⚡ Instant One-Tap Presets:** Schedule countdown alarms instantly with customizable cards (e.g. `+15m`, `+30m`, `+1h`, `+2h`). Reorder, edit, and theme up to 10 presets with zero text overlap.
-* **⏰ Saved Daily Clock Alarms:** Store up to 10 fixed time-of-day alarms (e.g. `07:00 AM`, `11:30 PM`) with quick-toggle switches and AM/PM time pickers.
-* **⏳ Custom Countdown Timer:** Set exact countdown durations from right now (e.g. `45m`) with ±1m / ±5m step buttons and precision sliders.
-* **🕒 Smart Automatic Time-of-Day Labeling:** Dynamically auto-generates context-aware alarm names based on the target trigger hour (`Early Morning Alarm`, `Morning Alarm`, `Afternoon Alarm`, `Evening Alarm`, `Late Night Alarm`).
+* **🎰 Casino Slot Tumbler Duration Wheel (v3.5.2):** Tactile 3-column rolling wheels (`00..23h : 00..59m : 00..59s`) with kinetic momentum snapping, frosted center magnifier lens, and 1-tap quick jump chips for presets and custom timers.
+* **🕒 Liquid 12-Hour Clock Dial & Top AM/PM Tab:** Precision circular clock dials with glowing electric cyan hands and a liquid glass AM/PM segmented toggle for daily alarms.
+* **⏱️ Precision Seconds Tab Strip:** 1-tap single-second accuracy strip (`00s`, `15s`, `30s`, `45s`) for exact timer configuration.
+* **⚡ Instant One-Tap Presets:** Schedule countdown alarms instantly with customizable cards (e.g. `+15m`, `+30m`, `+1h`, `+2h`). Reorder, edit, and theme presets up to 24 hours.
+* **🛡️ Fail-Safe In-App Ringing Banner & Auto-Redirect:** Pulsating emergency dismiss/snooze card guaranteeing 1-tap alarm shutoff even if notification permissions are revoked, plus a 10-minute auto-silence timeout.
 * **🔔 Single-Source Foreground Audio Engine:** Reliable, loud continuous audio ringtone playback and vibration via `AlarmSoundService` even when the app is killed or device is locked, with zero dual-sound collisions.
 * **🎵 Full OEM & Custom Sound Library:** Scans all pre-installed manufacturer ringtones asynchronously in the background and supports custom local audio files (`MP3`, `WAV`, `FLAC`, `OGG`, `AAC`) with live preview playback.
 * **⚡ 120 FPS Zero-Lag Architecture:** Ticker recompositions are strictly isolated to leaf components with zero main-thread blocking.
@@ -39,7 +40,7 @@ Quick Alarm is designed for instant action—schedule alarms in a single tap wit
 * **Audio Engine:** Android `MediaPlayer`, `RingtoneManager`, & `AlarmSoundService`
 * **Storage:** Local `SharedPreferences` (JSON serialization)
 * **Build System:** Gradle 8.7 with Android Gradle Plugin (AGP) 8.3.2
-* **Target Platforms:** Android 8.0 (API Level 26) through Android 14+ (API Level 34)
+* **Target Platforms:** Android 8.0 (API Level 26) through Android 16 (API Level 36)
 
 ---
 

@@ -21,8 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.quickalarm.app.ui.components.LiquidClockDial
-import com.quickalarm.app.ui.components.LiquidSecondsSelectorBar
+import com.quickalarm.app.ui.components.CasinoTimeTumbler
 import com.quickalarm.app.ui.theme.*
 import com.quickalarm.app.util.AlarmScheduler
 import java.util.Calendar
@@ -67,7 +66,7 @@ fun CustomDurationDialog(
                 .padding(vertical = 6.dp),
             shape = RoundedCornerShape(26.dp),
             colors = CardDefaults.cardColors(
-                containerColor = if (colors.isDark) Color(0xFF111827).copy(alpha = 0.88f) else Color(0xFFFFFFFF).copy(alpha = 0.92f)
+                containerColor = if (colors.isDark) Color(0xFF111827).copy(alpha = 0.90f) else Color(0xFFFFFFFF).copy(alpha = 0.94f)
             ),
             border = androidx.compose.foundation.BorderStroke(
                 1.dp,
@@ -146,55 +145,19 @@ fun CustomDurationDialog(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Large Digital Duration Readout with Seconds
-                Text(
-                    text = "${String.format("%02d", hours)}h : ${String.format("%02d", minutes)}m : ${String.format("%02d", seconds)}s",
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = PrimaryIndigo,
-                    letterSpacing = 1.sp
-                )
-
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Asymmetric Dual Dials (Concentric 24h Hour Dial + Compact Minute Dial)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Concentric 24-Hour Dial (Outer: 0-11h, Inner: 12-23h)
-                    LiquidClockDial(
-                        selectedValue = hours,
-                        range = 0..23,
-                        isHourDial = true,
-                        is24HourPreset = true,
-                        title = "Hours (0-23h)",
-                        dialRadiusDp = 72,
-                        accentColor = PrimaryIndigo,
-                        onValueChange = { hours = it }
-                    )
-
-                    // Compact Minute Dial
-                    LiquidClockDial(
-                        selectedValue = minutes,
-                        range = 0..59,
-                        isHourDial = false,
-                        title = "Minutes (0-59m)",
-                        dialRadiusDp = 58,
-                        accentColor = PrimaryIndigo,
-                        onValueChange = { minutes = it }
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Precision Seconds Selector Bar
-                LiquidSecondsSelectorBar(
+                // 🎰 Vibrant Casino Time Tumbler Roller
+                CasinoTimeTumbler(
+                    hours = hours,
+                    minutes = minutes,
                     seconds = seconds,
-                    onSecondsChange = { seconds = it }
+                    onTimeChange = { h, m, s ->
+                        hours = h
+                        minutes = m
+                        seconds = s
+                    },
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))

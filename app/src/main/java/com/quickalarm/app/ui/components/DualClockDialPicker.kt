@@ -357,8 +357,8 @@ fun LiquidClockDial(
 }
 
 /**
- * Precision Liquid Seconds Selector Bar.
- * Provides instant second-level setting (00s, 15s, 30s, 45s) and +/- fine stepper.
+ * Precision Liquid Seconds Tab Strip.
+ * Provides instant 1-tap second selection (00s, 15s, 30s, 45s) plus fine-tuning stepper.
  */
 @Composable
 fun LiquidSecondsSelectorBar(
@@ -448,7 +448,7 @@ fun LiquidSecondsSelectorBar(
                             if (isSelected) AccentAmber else (if (colors.isDark) Color(0xFF0F172A).copy(alpha = 0.6f) else Color(0xFFE2E8F0))
                         )
                         .clickable { onSecondsChange(s) }
-                        .padding(vertical = 5.dp)
+                        .padding(vertical = 6.dp)
                 ) {
                     Text(
                         text = String.format("%02ds", s),

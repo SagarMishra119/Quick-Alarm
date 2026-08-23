@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [3.5.2] - 2026-08-23
+
+### Added
+- **🎰 Casino Slot Tumbler Duration Wheel:** Built `CasinoTimeTumbler.kt`—a tactile 3-column rolling wheel (`00..23h : 00..59m : 00..59s`) with momentum snapping, glowing center laser lens, and 1-tap quick jump chips for all custom timers and presets.
+- **Notification Drawer Zero-Clutter:** Removed notification drawer cards while preserving Android's persistent native status bar alarm icon (next to Wi-Fi/Battery) via system `AlarmClockInfo`.
+- **Liquid 12h Clock Dial & Top AM/PM Tab:** Refined `SavedAlarmDialog.kt` with a prominent 12-hour clock dial and liquid AM/PM segmented toggle tab.
+- **Precision Seconds Tab Strip:** Seamless 1-tap second selection strip (`00s`, `15s`, `30s`, `45s`) across time-setting interfaces.
+
+### Changed
+- **Version Code Bump:** Incremented `versionCode` to `11` and `versionName` to `3.5.2`.
+
+---
+
 ## [3.5.1] - 2026-08-23
 
 ### Added
