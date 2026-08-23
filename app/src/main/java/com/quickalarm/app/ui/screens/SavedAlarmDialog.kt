@@ -22,6 +22,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.quickalarm.app.model.SavedAlarmItem
+import com.quickalarm.app.ui.components.AmPmSegmentedTab
+import com.quickalarm.app.ui.components.LiquidClockDial
+import com.quickalarm.app.ui.components.LiquidSecondsSelectorBar
 import com.quickalarm.app.ui.theme.*
 
 @Composable
@@ -43,10 +46,11 @@ fun SavedAlarmDialog(
     } else 7
 
     val initialIsPm = if (alarmToEdit != null) alarmToEdit.hour >= 12 else false
-    val initialMinute = alarmToEdit?.minute ?: 0
+    val initialMinute = alarmToEdit?.minute ?: 30
 
     var hour12 by remember { mutableIntStateOf(initialHour12) }
     var minute by remember { mutableIntStateOf(initialMinute) }
+    var seconds by remember { mutableIntStateOf(0) }
     var isPm by remember { mutableStateOf(initialIsPm) }
 
     // Helper for automatic time of day labeling
@@ -97,17 +101,24 @@ fun SavedAlarmDialog(
         Card(
             modifier = Modifier
                 .fillMaxWidth(0.92f)
-                .heightIn(max = 600.dp)
-                .padding(vertical = 12.dp),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = colors.surface),
+                .heightIn(max = 700.dp)
+                .padding(vertical = 6.dp),
+            shape = RoundedCornerShape(26.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = if (colors.isDark) Color(0xFF111827).copy(alpha = 0.88f) else Color(0xFFFFFFFF).copy(alpha = 0.92f)
+            ),
+            border = androidx.compose.foundation.BorderStroke(
+                1.dp,
+                if (colors.isDark) Color(0xFF334155).copy(alpha = 0.5f) else Color(0xFFCBD5E1)
+            ),
             elevation = CardDefaults.cardElevation(12.dp)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(scrollState)
-                    .padding(20.dp)
+                    .padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Header Row
                 Row(
@@ -134,7 +145,7 @@ fun SavedAlarmDialog(
                         }
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            text = if (isEditing) "Edit Saved Alarm" else "New Saved Alarm",
+                            text = if (isEditing) "Edit Alarm" else "Set Alarm",
                             fontSize = 19.sp,
                             fontWeight = FontWeight.Bold,
                             color = colors.textPrimary,
@@ -149,221 +160,88 @@ fun SavedAlarmDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-                // Time Display Preview Box
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            brush = Brush.horizontalGradient(
-                                if (colors.isDark) listOf(Color(0xFF064E3B), Color(0xFF0F2942))
-                                else listOf(Color(0xFFD1FAE5), Color(0xFFA7F3D0))
-                            ),
-                            shape = RoundedCornerShape(16.dp)
-                        )
-                        .border(1.dp, AccentEmerald.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
-                        .padding(14.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = getTimeOfDayLabel(hour24),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = if (colors.isDark) Color(0xFFA7F3D0) else Color(0xFF065F46)
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = tempAlarm.getFormattedTime(),
-                            fontSize = 32.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = if (colors.isDark) AccentEmerald else Color(0xFF047857),
-                            letterSpacing = 1.sp
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // AM / PM Selector Row
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .background(colors.cardBackgroundElevated, RoundedCornerShape(12.dp))
-                            .border(1.dp, colors.surfaceBorder, RoundedCornerShape(12.dp))
-                            .padding(4.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .background(
-                                    if (!isPm) AccentEmerald else Color.Transparent,
-                                    RoundedCornerShape(8.dp)
-                                )
-                                .clickable { isPm = false }
-                                .padding(horizontal = 24.dp, vertical = 8.dp)
-                        ) {
-                            Text(
-                                text = "AM",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (!isPm) Color.White else colors.textSecondary
-                            )
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .background(
-                                    if (isPm) AccentEmerald else Color.Transparent,
-                                    RoundedCornerShape(8.dp)
-                                )
-                                .clickable { isPm = true }
-                                .padding(horizontal = 24.dp, vertical = 8.dp)
-                        ) {
-                            Text(
-                                text = "PM",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isPm) Color.White else colors.textSecondary
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                // Hours Selector (1 - 12) with Zero Overlap Layout
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(text = "Hour", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
-                        Text(text = "$hour12 ${if (isPm) "PM" else "AM"}", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = AccentEmerald)
-                    }
-
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Button(
-                            onClick = { hour12 = if (hour12 > 1) hour12 - 1 else 12 },
-                            modifier = Modifier.weight(1f).height(32.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Text("-1h", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
-                        }
-
-                        Button(
-                            onClick = { hour12 = if (hour12 < 12) hour12 + 1 else 1 },
-                            modifier = Modifier.weight(1f).height(32.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Text("+1h", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
-                        }
-                    }
-                }
-
-                Slider(
-                    value = hour12.toFloat(),
-                    onValueChange = { hour12 = it.toInt() },
-                    valueRange = 1f..12f,
-                    steps = 10,
-                    colors = SliderDefaults.colors(
-                        thumbColor = AccentEmerald,
-                        activeTrackColor = AccentEmerald,
-                        inactiveTrackColor = colors.chipBackground
-                    )
+                // Top AM / PM Segmented Tab
+                AmPmSegmentedTab(
+                    isAm = !isPm,
+                    onAmSelected = { isPm = false },
+                    onPmSelected = { isPm = true }
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Minutes Selector (0 - 59) with Zero Overlap Layout
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(text = "Minute", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
-                        Text(text = String.format("%02d mins", minute), fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = SecondaryCyan)
-                    }
-
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Button(
-                            onClick = { minute = (minute - 5 + 60) % 60 },
-                            modifier = Modifier.weight(1f).height(32.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Text("-5m", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
-                        }
-
-                        Button(
-                            onClick = { minute = (minute - 1 + 60) % 60 },
-                            modifier = Modifier.weight(1f).height(32.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Text("-1m", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
-                        }
-
-                        Button(
-                            onClick = { minute = (minute + 1) % 60 },
-                            modifier = Modifier.weight(1f).height(32.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Text("+1m", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
-                        }
-
-                        Button(
-                            onClick = { minute = (minute + 5) % 60 },
-                            modifier = Modifier.weight(1f).height(32.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Text("+5m", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
-                        }
-                    }
+                // Dynamic Time-of-Day Category Badge
+                Box(
+                    modifier = Modifier
+                        .background(
+                            color = if (colors.isDark) Color(0xFF064E3B).copy(alpha = 0.5f) else Color(0xFFD1FAE5),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        .border(1.dp, AccentEmerald.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 14.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = getTimeOfDayLabel(hour24),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (colors.isDark) Color(0xFFA7F3D0) else Color(0xFF065F46)
+                    )
                 }
 
-                Slider(
-                    value = minute.toFloat(),
-                    onValueChange = { minute = it.toInt() },
-                    valueRange = 0f..59f,
-                    steps = 58,
-                    colors = SliderDefaults.colors(
-                        thumbColor = SecondaryCyan,
-                        activeTrackColor = SecondaryCyan,
-                        inactiveTrackColor = colors.chipBackground
-                    )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Large Digital Time Readout with Seconds
+                Text(
+                    text = "${String.format("%02d", hour12)} : ${String.format("%02d", minute)} : ${String.format("%02d", seconds)} ${if (isPm) "PM" else "AM"}",
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = SecondaryCyan,
+                    letterSpacing = 1.sp
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Label Input with dynamic time-of-day suggestion
+                // Asymmetric Dual Circular Dials (Dominant Hour Dial + Compact Minute Dial)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Dominant Hour Dial
+                    LiquidClockDial(
+                        selectedValue = hour12,
+                        range = 1..12,
+                        isHourDial = true,
+                        title = "Hours (1-12)",
+                        dialRadiusDp = 72,
+                        accentColor = SecondaryCyan,
+                        onValueChange = { hour12 = it }
+                    )
+
+                    // Compact Minute Dial
+                    LiquidClockDial(
+                        selectedValue = minute,
+                        range = 0..59,
+                        isHourDial = false,
+                        title = "Minutes (0-59)",
+                        dialRadiusDp = 58,
+                        accentColor = SecondaryCyan,
+                        onValueChange = { minute = it }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Precision Seconds Selector Bar
+                LiquidSecondsSelectorBar(
+                    seconds = seconds,
+                    onSecondsChange = { seconds = it }
+                )
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Label Input Field
                 OutlinedTextField(
                     value = label,
                     onValueChange = {
@@ -377,23 +255,23 @@ fun SavedAlarmDialog(
                                 userHasCustomizedLabel = false
                                 label = getTimeOfDayLabel(hour24)
                             }) {
-                                Icon(Icons.Default.Sync, contentDescription = "Auto Label", tint = AccentEmerald)
+                                Icon(Icons.Default.Sync, contentDescription = "Auto Label", tint = SecondaryCyan)
                             }
                         }
                     },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = AccentEmerald,
+                        focusedBorderColor = SecondaryCyan,
                         unfocusedBorderColor = colors.surfaceBorder,
                         focusedTextColor = colors.textPrimary,
                         unfocusedTextColor = colors.textPrimary
                     )
                 )
 
-                Spacer(modifier = Modifier.height(18.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // Save Button
+                // Save Action Button
                 Button(
                     onClick = {
                         val finalLabel = label.ifBlank { getTimeOfDayLabel(hour24) }
@@ -408,16 +286,25 @@ fun SavedAlarmDialog(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(46.dp),
+                        .height(48.dp),
                     shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = AccentEmerald)
+                    colors = ButtonDefaults.buttonColors(containerColor = SecondaryCyan)
                 ) {
                     Text(
-                        text = if (isEditing) "Update Saved Alarm" else "Save & Enable Alarm",
+                        text = if (isEditing) "Update Alarm (${tempAlarm.getFormattedTime()})" else "Set Alarm (${tempAlarm.getFormattedTime()})",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(text = "Cancel", color = colors.textMuted, fontSize = 14.sp)
                 }
             }
         }

@@ -17,6 +17,7 @@ class BootReceiver : BroadcastReceiver() {
                     AlarmScheduler.removeAlarm(context, alarm.id)
                 }
             }
+            AlarmScheduler.updateActiveAlarmIndicator(context)
         }
     }
 }

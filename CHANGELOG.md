@@ -6,6 +6,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [3.5.1] - 2026-08-23
+
+### Added
+- **Asymmetric Dual-Dial Layout:** Sized dominant Hour Dial (large ~`150dp`) and compact Minute Dial (~`120dp`) with genuine liquid glass translucency showing the dynamic app wallpaper beneath.
+- **24-Hour Concentric Dials for Presets/Timers:** Enabled custom countdowns and presets up to `23h 59m 59s` via dual-concentric orbits (Outer: `0–11h`, Inner: `12–23h`).
+- **Precision Seconds Selector:** Integrated a dedicated seconds selector bar allowing single-second precision setting across all timers and daily alarms.
+- **Alarm Audio Loop Fix:** Resolved recent-app recreation bug in `AlarmActivity` to ensure dismissed alarms never restart audio when opening from background.
+- **Broadcast Dismissal Sync:** Broadcasts dismissal across activities to close all background ringing instances cleanly.
+
+### Changed
+- **Version Code Bump:** Incremented `versionCode` to `10` and `versionName` to `3.5.1`.
+
+---
+
+## [3.5.0] - 2026-08-23
+
+### Added
+- **Liquid Dual Clock Dial Time Pickers:** Integrated lightweight, high-performance interactive circular clock dials (`DualClockDialPicker.kt`) for setting hours and minutes with smooth touch-drag rotation physics.
+- **Top AM / PM Segmented Tab:** Clean liquid glass toggle tab for daily alarm configuration.
+- **Emergency In-App Ringing Banner:** Added a high-priority pulsating emergency dismiss/snooze card on `MainScreen` allowing instant alarm shutoff even if notification permissions are disabled.
+- **Auto-Redirect on App Resume:** `MainActivity` immediately redirects to `AlarmActivity` if opened while an alarm is ringing.
+- **10-Minute Safety Auto-Silence:** Added automatic timeout in `AlarmSoundService` to silence unattended alarms and prevent battery drain.
+- **Status Bar & Notification Shade Indicator:** Added dynamic status bar alarm icon and silent ongoing notification showing the next armed alarm time.
+
+### Changed
+- **Target SDK 36 (Android 16):** Upgraded `targetSdk` to API Level 36 for full Google Play forward compliance.
+- **Version Code Bump:** Incremented `versionCode` to `9` and `versionName` to `3.5.0`.
+- **Zero-Stepper UI Modernization:** Replaced old stepper buttons with precision dual circular dials and dynamic button titles across all time-setting dialogs.
+
+---
+
 ## [Beta Testing] - 2026-08-22
 
 ### Ongoing Verification & Closed Testing Phase

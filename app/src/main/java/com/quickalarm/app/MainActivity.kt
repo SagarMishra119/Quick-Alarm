@@ -17,6 +17,7 @@ class MainActivity : ComponentActivity() {
 
         // Create notification channel on app start
         AlarmScheduler.createNotificationChannel(this)
+        AlarmScheduler.createStatusNotificationChannel(this)
 
         setContent {
             QuickAlarmTheme {
@@ -28,5 +29,18 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (AlarmSoundService.isRinging) {
+            val intent = android.content.Intent(this, AlarmActivity::class.java).apply {
+                putExtra("ALARM_ID", AlarmSoundService.currentAlarmId)
+                putExtra("ALARM_LABEL", AlarmSoundService.currentAlarmLabel)
+                flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP or android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
+            }
+            startActivity(intent)
+        }
+        AlarmScheduler.updateActiveAlarmIndicator(this)
     }
 }

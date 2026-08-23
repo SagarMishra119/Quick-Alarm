@@ -7,6 +7,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -41,6 +42,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.quickalarm.app.AlarmSoundService
 import com.quickalarm.app.R
 import com.quickalarm.app.model.AlarmItem
 import com.quickalarm.app.model.PresetItem
@@ -66,6 +68,8 @@ fun MainScreen() {
     var savedAlarms by remember { mutableStateOf(AppSettings.getSavedAlarms(context)) }
     var selectedSound by remember { mutableStateOf(AppSettings.getSelectedSound(context)) }
     var snoozeMinutes by remember { mutableIntStateOf(AppSettings.getSnoozeMinutes(context)) }
+    var isCurrentlyRinging by remember { mutableStateOf(AlarmSoundService.isRinging) }
+    var ringingLabel by remember { mutableStateOf(AlarmSoundService.currentAlarmLabel) }
 
     // Instant lifecycle refresh: reload alarms whenever MainActivity resumes (e.g. after snooze/dismiss)
     DisposableEffect(lifecycleOwner) {
@@ -76,6 +80,8 @@ fun MainScreen() {
                 presets = AppSettings.getPresets(context)
                 selectedSound = AppSettings.getSelectedSound(context)
                 snoozeMinutes = AppSettings.getSnoozeMinutes(context)
+                isCurrentlyRinging = AlarmSoundService.isRinging
+                ringingLabel = AlarmSoundService.currentAlarmLabel
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -132,6 +138,8 @@ fun MainScreen() {
             if (freshSaved != savedAlarms) {
                 savedAlarms = freshSaved
             }
+            isCurrentlyRinging = AlarmSoundService.isRinging
+            ringingLabel = AlarmSoundService.currentAlarmLabel
         }
     }
 
@@ -262,9 +270,46 @@ fun MainScreen() {
             ) {
                 item { Spacer(modifier = Modifier.height(6.dp)) }
 
-                // Top Header & Live Clock with v3.4 Badge (Clean, No "100% Offline" clutter)
+                // Top Header & Live Clock with v3.5 Badge (Clean, No "100% Offline" clutter)
                 item {
                     HeaderClockSection()
+                }
+
+                // Emergency Ringing Banner (Direct in-app dismiss/snooze controls)
+                if (isCurrentlyRinging) {
+                    item {
+                        EmergencyRingingBanner(
+                            alarmLabel = ringingLabel,
+                            onDismissClick = {
+                                val serviceIntent = android.content.Intent(context, AlarmSoundService::class.java).apply {
+                                    action = AlarmSoundService.ACTION_STOP_ALARM
+                                }
+                                context.startService(serviceIntent)
+                                try {
+                                    context.sendBroadcast(android.content.Intent("com.quickalarm.app.STOP_RINGTONE"))
+                                } catch (e: Exception) {
+                                    // ignore
+                                }
+                                isCurrentlyRinging = false
+                                activeAlarms = AlarmScheduler.getActiveAlarms(context)
+                            },
+                            onSnoozeClick = {
+                                val serviceIntent = android.content.Intent(context, AlarmSoundService::class.java).apply {
+                                    action = AlarmSoundService.ACTION_SNOOZE_ALARM
+                                    putExtra("ALARM_LABEL", ringingLabel)
+                                    putExtra("SNOOZE_MINUTES", snoozeMinutes)
+                                }
+                                context.startService(serviceIntent)
+                                try {
+                                    context.sendBroadcast(android.content.Intent("com.quickalarm.app.STOP_RINGTONE"))
+                                } catch (e: Exception) {
+                                    // ignore
+                                }
+                                isCurrentlyRinging = false
+                                activeAlarms = AlarmScheduler.getActiveAlarms(context)
+                            }
+                        )
+                    }
                 }
 
                 // Permissions Banners (if needed)
@@ -691,6 +736,117 @@ fun MainScreen() {
 }
 
 /**
+ * Emergency Ringing Banner:
+ * Appears when an alarm is actively ringing, providing immediate 1-tap Dismiss and Snooze controls.
+ */
+@Composable
+fun EmergencyRingingBanner(
+    alarmLabel: String,
+    onDismissClick: () -> Unit,
+    onSnoozeClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "ringPulse")
+    val glowAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.4f,
+        targetValue = 0.95f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(600, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "glowAlpha"
+    )
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .border(2.dp, AccentRose.copy(alpha = glowAlpha), RoundedCornerShape(20.dp)),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFF450A0A).copy(alpha = 0.92f)
+        ),
+        elevation = CardDefaults.cardElevation(8.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Alarm,
+                    contentDescription = null,
+                    tint = AccentRose,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "ALARM RINGING NOW",
+                    color = AccentRose,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 1.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = alarmLabel,
+                color = Color.White,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Button(
+                    onClick = onDismissClick,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(44.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentRose)
+                ) {
+                    Text(
+                        text = "DISMISS",
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 14.sp,
+                        color = Color.White
+                    )
+                }
+
+                Button(
+                    onClick = onSnoozeClick,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(44.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentAmber)
+                ) {
+                    Text(
+                        text = "SNOOZE",
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 14.sp,
+                        color = Color.White
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
  * Isolated Clock Section:
  * Live ticker runs strictly inside this Composable.
  */
@@ -759,7 +915,7 @@ fun HeaderClockSection() {
                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                         ) {
                             Text(
-                                text = "v3.4",
+                                text = "v3.5.1",
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White

@@ -22,6 +22,8 @@ import java.util.Locale
 object AlarmScheduler {
 
     const val CHANNEL_ID = "quick_alarm_channel_v2"
+    const val STATUS_CHANNEL_ID = "quick_alarm_status_channel_v1"
+    private const val NOTIF_ID_STATUS = 9999
     private const val PREFS_NAME = "quick_alarm_prefs"
     private const val KEY_ALARMS = "saved_alarms"
 
@@ -153,6 +155,7 @@ object AlarmScheduler {
         val jsonArray = JSONArray()
         alarms.forEach { jsonArray.put(it.toJson()) }
         getPrefs(context).edit().putString(KEY_ALARMS, jsonArray.toString()).apply()
+        updateActiveAlarmIndicator(context)
     }
 
     private fun getPrefs(context: Context): SharedPreferences {
@@ -180,6 +183,76 @@ object AlarmScheduler {
 
             val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
+        }
+    }
+
+    /**
+     * Creates a silent, low-priority channel for displaying the active alarm status indicator
+     * in the system status bar and notification shade without sound or vibration.
+     */
+    fun createStatusNotificationChannel(context: Context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                STATUS_CHANNEL_ID,
+                "Active Alarm Indicator",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "Shows an active status bar indicator when an alarm is armed"
+                setSound(null, null)
+                enableVibration(false)
+                setShowBadge(false)
+                lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
+            }
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
+
+    /**
+     * Updates the persistent status bar alarm indicator icon and notification shade reminder.
+     * Automatically clears when all alarms are inactive.
+     */
+    fun updateActiveAlarmIndicator(context: Context) {
+        try {
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val activeAlarms = getActiveAlarms(context)
+            val now = System.currentTimeMillis()
+            val nextAlarm = activeAlarms.filter { it.triggerTimeMillis > now }.minByOrNull { it.triggerTimeMillis }
+
+            if (nextAlarm != null) {
+                createStatusNotificationChannel(context)
+
+                val openAppIntent = Intent(context, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                }
+                val pendingIntent = PendingIntent.getActivity(
+                    context,
+                    0,
+                    openAppIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+
+                val formattedTime = formatTime(nextAlarm.triggerTimeMillis)
+                val remainingTime = formatRemainingTime(nextAlarm.triggerTimeMillis)
+
+                val notification = NotificationCompat.Builder(context, STATUS_CHANNEL_ID)
+                    .setSmallIcon(R.drawable.ic_launcher_foreground)
+                    .setContentTitle("⏰ Quick Alarm Active")
+                    .setContentText("Next alarm: $formattedTime ($remainingTime)")
+                    .setSubText(nextAlarm.label)
+                    .setPriority(NotificationCompat.PRIORITY_LOW)
+                    .setCategory(NotificationCompat.CATEGORY_STATUS)
+                    .setOngoing(true)
+                    .setAutoCancel(false)
+                    .setContentIntent(pendingIntent)
+                    .build()
+
+                notificationManager.notify(NOTIF_ID_STATUS, notification)
+            } else {
+                notificationManager.cancel(NOTIF_ID_STATUS)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 

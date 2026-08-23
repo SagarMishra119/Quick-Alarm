@@ -67,22 +67,10 @@ class AlarmActivity : ComponentActivity() {
         val alarmLabel = intent.getStringExtra("ALARM_LABEL") ?: "Quick Alarm"
         val defaultSnoozeMinutes = AppSettings.getSnoozeMinutes(this)
 
-        // Ensure AlarmSoundService is ringing (Single Source Audio Engine)
+        // Safety: If alarm is not actively ringing (e.g. dismissed from banner or recent task reopen), close immediately
         if (!AlarmSoundService.isRinging) {
-            val serviceIntent = Intent(this, AlarmSoundService::class.java).apply {
-                action = AlarmSoundService.ACTION_START_ALARM
-                putExtra("ALARM_ID", alarmId)
-                putExtra("ALARM_LABEL", alarmLabel)
-            }
-            try {
-                ContextCompat.startForegroundService(this, serviceIntent)
-            } catch (e: Exception) {
-                try {
-                    startService(serviceIntent)
-                } catch (ex: Exception) {
-                    ex.printStackTrace()
-                }
-            }
+            finish()
+            return
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -104,7 +92,7 @@ class AlarmActivity : ComponentActivity() {
                         if (alarmId != -1L) {
                             AlarmScheduler.removeAlarm(this@AlarmActivity, alarmId)
                         }
-                        finish()
+                        finishAndRemoveTask()
                     },
                     onSnooze = { minutesToSnooze ->
                         val snoozeIntent = Intent(this@AlarmActivity, AlarmSoundService::class.java).apply {
@@ -116,10 +104,17 @@ class AlarmActivity : ComponentActivity() {
                         if (alarmId != -1L) {
                             AlarmScheduler.removeAlarm(this@AlarmActivity, alarmId)
                         }
-                        finish()
+                        finishAndRemoveTask()
                     }
                 )
             }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (!AlarmSoundService.isRinging) {
+            finish()
         }
     }
 

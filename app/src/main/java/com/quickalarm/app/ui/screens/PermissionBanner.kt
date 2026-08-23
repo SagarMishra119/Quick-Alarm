@@ -119,7 +119,7 @@ fun NotificationPermissionBanner(
                     color = Color.White
                 )
                 Text(
-                    text = "Enable notifications so Quick Alarm can alert you when your alarm rings.",
+                    text = "Enable notifications so Quick Alarm can show lockscreen controls to dismiss alarms when they ring.",
                     fontSize = 12.sp,
                     color = Color(0xFFFDE68A)
                 )

@@ -25,6 +25,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.quickalarm.app.model.PresetItem
+import com.quickalarm.app.ui.components.LiquidClockDial
+import com.quickalarm.app.ui.components.LiquidSecondsSelectorBar
 import com.quickalarm.app.ui.theme.*
 
 @Composable
@@ -38,30 +40,37 @@ fun PresetEditDialog(
 
     var hours by remember { mutableIntStateOf(presetToEdit?.let { it.minutes / 60 } ?: 0) }
     var minutes by remember { mutableIntStateOf(presetToEdit?.let { it.minutes % 60 } ?: 15) }
+    var seconds by remember { mutableIntStateOf(0) }
     var colorKey by remember { mutableStateOf(presetToEdit?.colorKey ?: "indigo") }
     var subtitle by remember { mutableStateOf(presetToEdit?.subtitle ?: "Quick Alarm") }
 
-    fun formatTitle(h: Int, m: Int): String {
+    fun formatTitle(h: Int, m: Int, s: Int = 0): String {
         return when {
+            h > 0 && m > 0 && s > 0 -> "+${h}h ${m}m ${s}s"
             h > 0 && m > 0 -> "+${h}h ${m}m"
+            h > 0 && s > 0 -> "+${h}h ${s}s"
             h > 0 -> "+${h}h"
-            else -> "+${m}m"
+            m > 0 && s > 0 -> "+${m}m ${s}s"
+            m > 0 -> "+${m}m"
+            s > 0 -> "+${s}s"
+            else -> "+0m"
         }
     }
 
     var title by remember {
-        mutableStateOf(presetToEdit?.title ?: formatTitle(hours, minutes))
+        mutableStateOf(presetToEdit?.title ?: formatTitle(hours, minutes, seconds))
     }
 
     var userCustomizedTitle by remember {
-        mutableStateOf(presetToEdit != null && presetToEdit.title != formatTitle(presetToEdit.minutes / 60, presetToEdit.minutes % 60))
+        mutableStateOf(presetToEdit != null && presetToEdit.title != formatTitle(presetToEdit.minutes / 60, presetToEdit.minutes % 60, 0))
     }
 
-    fun onTimeChanged(newHours: Int, newMinutes: Int) {
+    fun onTimeChanged(newHours: Int, newMinutes: Int, newSeconds: Int = seconds) {
         hours = newHours
         minutes = newMinutes
+        seconds = newSeconds
         if (!userCustomizedTitle) {
-            title = formatTitle(newHours, newMinutes)
+            title = formatTitle(newHours, newMinutes, newSeconds)
         }
     }
 
@@ -78,11 +87,14 @@ fun PresetEditDialog(
         Pair("pink", "Pink")
     )
 
+    val totalSeconds = (hours * 3600) + (minutes * 60) + seconds
+    val effectiveMinutes = if (totalSeconds > 0) ((totalSeconds + 59) / 60) else 0
+
     val tempPreset = PresetItem(
         id = presetToEdit?.id ?: "preset_${System.currentTimeMillis()}",
-        title = title.ifBlank { formatTitle(hours, minutes) },
+        title = title.ifBlank { formatTitle(hours, minutes, seconds) },
         subtitle = subtitle,
-        minutes = (hours * 60) + minutes,
+        minutes = effectiveMinutes,
         colorKey = colorKey
     )
 
@@ -95,17 +107,24 @@ fun PresetEditDialog(
         Card(
             modifier = Modifier
                 .fillMaxWidth(0.92f)
-                .heightIn(max = 600.dp)
-                .padding(vertical = 12.dp),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = colors.surface),
+                .heightIn(max = 700.dp)
+                .padding(vertical = 6.dp),
+            shape = RoundedCornerShape(26.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = if (colors.isDark) Color(0xFF111827).copy(alpha = 0.88f) else Color(0xFFFFFFFF).copy(alpha = 0.92f)
+            ),
+            border = androidx.compose.foundation.BorderStroke(
+                1.dp,
+                if (colors.isDark) Color(0xFF334155).copy(alpha = 0.5f) else Color(0xFFCBD5E1)
+            ),
             elevation = CardDefaults.cardElevation(12.dp)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(scrollState)
-                    .padding(20.dp)
+                    .padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Header Row
                 Row(
@@ -132,8 +151,8 @@ fun PresetEditDialog(
                         }
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            text = if (isEditing) "Edit Preset" else "Add New Preset",
-                            fontSize = 19.sp,
+                            text = if (isEditing) "Edit Preset (up to 24h)" else "Add Preset (up to 24h)",
+                            fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             color = colors.textPrimary,
                             maxLines = 1
@@ -144,169 +163,67 @@ fun PresetEditDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 // Live Preview Card
-                Text(
-                    text = "LIVE PREVIEW",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = colors.textMuted,
-                    letterSpacing = 1.sp
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-
                 PresetAlarmButton(
                     preset = tempPreset,
                     modifier = Modifier.fillMaxWidth(),
                     onClick = {}
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
-                // Hours Adjuster (Zero Overlap Layout)
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(text = "Hours", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
-                        Text(text = "${hours}h", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = PrimaryIndigo)
-                    }
-
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Button(
-                            onClick = { if (hours > 0) onTimeChanged(hours - 1, minutes) },
-                            enabled = hours > 0,
-                            modifier = Modifier.weight(1f).height(32.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Text("-1h", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
-                        }
-
-                        Button(
-                            onClick = { if (hours < 24) onTimeChanged(hours + 1, minutes) },
-                            enabled = hours < 24,
-                            modifier = Modifier.weight(1f).height(32.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Text("+1h", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
-                        }
-                    }
-                }
-
-                Slider(
-                    value = hours.toFloat(),
-                    onValueChange = { onTimeChanged(it.toInt(), minutes) },
-                    valueRange = 0f..24f,
-                    steps = 23,
-                    colors = SliderDefaults.colors(
-                        thumbColor = PrimaryIndigo,
-                        activeTrackColor = PrimaryIndigo,
-                        inactiveTrackColor = colors.chipBackground
-                    )
+                // Large Digital Duration Readout
+                Text(
+                    text = "${String.format("%02d", hours)}h : ${String.format("%02d", minutes)}m : ${String.format("%02d", seconds)}s",
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = PrimaryIndigo,
+                    letterSpacing = 1.sp
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Minutes Adjuster (Zero Overlap Layout)
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(text = "Minutes", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
-                        Text(text = "$minutes mins", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = SecondaryCyan)
-                    }
+                // Asymmetric Dual Dials (Concentric 24-Hour Dial + Compact Minute Dial)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Concentric 24-Hour Dial
+                    LiquidClockDial(
+                        selectedValue = hours,
+                        range = 0..23,
+                        isHourDial = true,
+                        is24HourPreset = true,
+                        title = "Hours (0-23h)",
+                        dialRadiusDp = 72,
+                        accentColor = PrimaryIndigo,
+                        onValueChange = { onTimeChanged(it, minutes, seconds) }
+                    )
 
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Button(
-                            onClick = {
-                                val nextM = (minutes - 5).coerceAtLeast(0)
-                                if (nextM > 0 || hours > 0) onTimeChanged(hours, nextM)
-                            },
-                            enabled = minutes > 0 || hours > 0,
-                            modifier = Modifier.weight(1f).height(32.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Text("-5m", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
-                        }
-
-                        Button(
-                            onClick = {
-                                if (minutes > 0 || hours > 0) onTimeChanged(hours, (minutes - 1).coerceAtLeast(0))
-                            },
-                            enabled = minutes > 0 || hours > 0,
-                            modifier = Modifier.weight(1f).height(32.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Text("-1m", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
-                        }
-
-                        Button(
-                            onClick = {
-                                if (minutes < 59) onTimeChanged(hours, minutes + 1)
-                            },
-                            enabled = minutes < 59,
-                            modifier = Modifier.weight(1f).height(32.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Text("+1m", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
-                        }
-
-                        Button(
-                            onClick = {
-                                val nextM = (minutes + 5).coerceAtMost(59)
-                                onTimeChanged(hours, nextM)
-                            },
-                            enabled = minutes < 59,
-                            modifier = Modifier.weight(1f).height(32.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = colors.chipBackground),
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Text("+5m", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
-                        }
-                    }
+                    // Compact Minute Dial
+                    LiquidClockDial(
+                        selectedValue = minutes,
+                        range = 0..59,
+                        isHourDial = false,
+                        title = "Minutes (0-59m)",
+                        dialRadiusDp = 58,
+                        accentColor = PrimaryIndigo,
+                        onValueChange = { onTimeChanged(hours, it, seconds) }
+                    )
                 }
 
-                Slider(
-                    value = minutes.toFloat(),
-                    onValueChange = { onTimeChanged(hours, it.toInt()) },
-                    valueRange = 0f..59f,
-                    steps = 58,
-                    colors = SliderDefaults.colors(
-                        thumbColor = SecondaryCyan,
-                        activeTrackColor = SecondaryCyan,
-                        inactiveTrackColor = colors.chipBackground
-                    )
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Precision Seconds Selector Bar
+                LiquidSecondsSelectorBar(
+                    seconds = seconds,
+                    onSecondsChange = { onTimeChanged(hours, minutes, it) }
                 )
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 // Title Input with Sync Button
                 OutlinedTextField(
@@ -320,7 +237,7 @@ fun PresetEditDialog(
                         IconButton(
                             onClick = {
                                 userCustomizedTitle = false
-                                title = formatTitle(hours, minutes)
+                                title = formatTitle(hours, minutes, seconds)
                             }
                         ) {
                             Icon(Icons.Default.Sync, contentDescription = "Sync Title", tint = PrimaryIndigo)
@@ -336,7 +253,7 @@ fun PresetEditDialog(
                     )
                 )
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 // Subtitle Input
                 OutlinedTextField(
@@ -353,7 +270,7 @@ fun PresetEditDialog(
                     )
                 )
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 // Color Theme Picker
                 Text(
@@ -361,9 +278,10 @@ fun PresetEditDialog(
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = colors.textMuted,
-                    letterSpacing = 1.sp
+                    letterSpacing = 1.sp,
+                    modifier = Modifier.fillMaxWidth()
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -375,7 +293,7 @@ fun PresetEditDialog(
 
                         Box(
                             modifier = Modifier
-                                .size(38.dp)
+                                .size(36.dp)
                                 .clip(CircleShape)
                                 .background(Brush.linearGradient(colorGradient))
                                 .border(
@@ -387,44 +305,52 @@ fun PresetEditDialog(
                             contentAlignment = Alignment.Center
                         ) {
                             if (isSelected) {
-                                Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                                Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
                             }
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(18.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 // Save Preset Button
                 Button(
                     onClick = {
-                        val totalMins = (hours * 60) + minutes
-                        if (totalMins > 0) {
-                            val finalTitle = title.ifBlank { formatTitle(hours, minutes) }
+                        if (totalSeconds > 0) {
+                            val finalTitle = title.ifBlank { formatTitle(hours, minutes, seconds) }
                             val finalSub = subtitle.ifBlank { "Quick Alarm" }
                             val result = PresetItem(
                                 id = presetToEdit?.id ?: "preset_${System.currentTimeMillis()}",
                                 title = finalTitle,
                                 subtitle = finalSub,
-                                minutes = totalMins,
+                                minutes = effectiveMinutes,
                                 colorKey = colorKey
                             )
                             onSave(result)
                         }
                     },
-                    enabled = (hours * 60) + minutes > 0,
+                    enabled = totalSeconds > 0,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(46.dp),
+                        .height(48.dp),
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigo)
                 ) {
                     Text(
-                        text = if (isEditing) "Save Changes" else "Add Preset",
+                        text = if (isEditing) "Save Changes (${formatTitle(hours, minutes, seconds)})" else "Add Preset (${formatTitle(hours, minutes, seconds)})",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(text = "Cancel", color = colors.textMuted, fontSize = 14.sp)
                 }
             }
         }

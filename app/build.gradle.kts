@@ -22,9 +22,9 @@ android {
     defaultConfig {
         applicationId = "com.quickalarm.app"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 8
-        versionName = "3.4.1"
+        targetSdk = 36
+        versionCode = 10
+        versionName = "3.5.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

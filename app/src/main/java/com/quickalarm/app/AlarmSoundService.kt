@@ -27,14 +27,23 @@ class AlarmSoundService : Service() {
         const val ACTION_START_ALARM = "com.quickalarm.app.ACTION_START_ALARM"
         const val ACTION_STOP_ALARM = "com.quickalarm.app.ACTION_STOP_ALARM"
         const val ACTION_SNOOZE_ALARM = "com.quickalarm.app.ACTION_SNOOZE_ALARM"
+        const val AUTO_SILENCE_TIMEOUT_MS = 10 * 60 * 1000L // 10 minutes auto-silence safety
 
         var isRinging = false
+            private set
+        var currentAlarmLabel: String = "Quick Alarm"
+            private set
+        var currentAlarmId: Long = -1L
             private set
     }
 
     private var mediaPlayer: MediaPlayer? = null
     private var vibrator: Vibrator? = null
     private var wakeLock: PowerManager.WakeLock? = null
+    private val timeoutHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val autoSilenceRunnable = Runnable {
+        stopAlarmAndSelf()
+    }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -47,6 +56,10 @@ class AlarmSoundService : Service() {
         when (action) {
             ACTION_START_ALARM -> {
                 isRinging = true
+                currentAlarmId = alarmId
+                currentAlarmLabel = alarmLabel
+                timeoutHandler.removeCallbacks(autoSilenceRunnable)
+                timeoutHandler.postDelayed(autoSilenceRunnable, AUTO_SILENCE_TIMEOUT_MS)
                 acquireWakeLock()
                 startRinging(alarmId, alarmLabel, notifId)
             }
@@ -214,6 +227,9 @@ class AlarmSoundService : Service() {
 
     private fun stopAlarmAndSelf() {
         isRinging = false
+        currentAlarmId = -1L
+        currentAlarmLabel = "Quick Alarm"
+        timeoutHandler.removeCallbacks(autoSilenceRunnable)
         try {
             mediaPlayer?.stop()
             mediaPlayer?.release()
@@ -239,6 +255,7 @@ class AlarmSoundService : Service() {
         }
 
         stopForeground(STOP_FOREGROUND_REMOVE)
+        AlarmScheduler.updateActiveAlarmIndicator(this)
         stopSelf()
     }
 
