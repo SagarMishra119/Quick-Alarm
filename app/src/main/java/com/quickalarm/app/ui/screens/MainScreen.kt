@@ -915,7 +915,7 @@ fun HeaderClockSection() {
                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                         ) {
                             Text(
-                                text = "v3.5.3",
+                                text = "v3.5.4",
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White

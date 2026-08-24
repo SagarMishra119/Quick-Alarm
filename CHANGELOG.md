@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [3.5.4] - 2026-08-24
+
+### Fixed & Improved
+- **🎰 Separated Wheel Header Labels:** Moved `HOURS`, `MINS`, and `SECS` labels outside/above the tumbler box to prevent top fading numbers from colliding with text headers.
+- **🎯 Dead-Center Digit & Colon Alignment:** Computed symmetrical item heights and content padding so digits sit dead-center in the frosted magnifier lens with baseline-aligned colons (`:`).
+- **📌 OEM Status Bar Icon Guarantee:** Upgraded status channel to `IMPORTANCE_DEFAULT` with `CATEGORY_ALARM` and non-dismissible flags (`FLAG_NO_CLEAR`, `FLAG_ONGOING_EVENT`) to ensure Vivo, Xiaomi, and Samsung status bars reliably display the top app icon.
+- **📱 Compact Dialog Spacing:** Optimized internal vertical padding across `PresetEditDialog` and `CustomDurationDialog` for a balanced, comfortable fit.
+
+### Changed
+- **Version Code Bump:** Incremented `versionCode` to `13` and `versionName` to `3.5.4`.
+
+---
+
 ## [3.5.3] - 2026-08-23
 
 ### Fixed & Improved

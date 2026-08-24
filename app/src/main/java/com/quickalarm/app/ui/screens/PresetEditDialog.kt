@@ -122,7 +122,7 @@ fun PresetEditDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(scrollState)
-                    .padding(20.dp),
+                    .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Header Row
@@ -137,7 +137,7 @@ fun PresetEditDialog(
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(36.dp)
+                                .size(34.dp)
                                 .background(if (colors.isDark) Color(0xFF1E1B4B) else Color(0xFFEEF2FF), CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
@@ -145,24 +145,24 @@ fun PresetEditDialog(
                                 imageVector = if (isEditing) Icons.Default.Edit else Icons.Default.AddAlarm,
                                 contentDescription = null,
                                 tint = PrimaryIndigo,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(18.dp)
                             )
                         }
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
                             text = if (isEditing) "Edit Preset (up to 24h)" else "Add Preset (up to 24h)",
-                            fontSize = 18.sp,
+                            fontSize = 17.sp,
                             fontWeight = FontWeight.Bold,
                             color = colors.textPrimary,
                             maxLines = 1
                         )
                     }
-                    IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
+                    IconButton(onClick = onDismiss, modifier = Modifier.size(30.dp)) {
                         Icon(Icons.Default.Close, contentDescription = "Close", tint = colors.textSecondary)
                     }
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 // Live Preview Card
                 PresetAlarmButton(
@@ -171,7 +171,7 @@ fun PresetEditDialog(
                     onClick = {}
                 )
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 // 🎰 Vibrant Casino Time Tumbler Roller
                 CasinoTimeTumbler(
@@ -182,7 +182,7 @@ fun PresetEditDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 // Title Input with Sync Button
                 OutlinedTextField(

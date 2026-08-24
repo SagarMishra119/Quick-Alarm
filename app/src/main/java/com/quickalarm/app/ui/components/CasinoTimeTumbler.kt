@@ -37,7 +37,7 @@ private const val VIRTUAL_MULTIPLIER = 1000
 /**
  * 🎰 Casino-Style Infinite Looping 3-Column Time Tumbler Roller.
  * Features 3 continuous 360° virtual reels for Hours (00-23), Minutes (00-59), and Seconds (00-59).
- * Fully centralized with pixel-perfect alignment, smooth inertia snapping, and glowing laser magnifier lens.
+ * Fully centralized with separated column headers, pixel-perfect alignment, and glowing laser magnifier lens.
  */
 @Composable
 fun CasinoTimeTumbler(
@@ -110,12 +110,53 @@ fun CasinoTimeTumbler(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier.fillMaxWidth()
     ) {
-        // Main Casino Tumbler Housing Frame
+        // 1. Column Labels Separated Above Wheel Box (Zero Number Collision)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "HOURS",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = colors.textMuted,
+                letterSpacing = 1.5.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.weight(1f)
+            )
+            Spacer(modifier = Modifier.width(14.dp))
+            Text(
+                text = "MINS",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = colors.textMuted,
+                letterSpacing = 1.5.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.weight(1f)
+            )
+            Spacer(modifier = Modifier.width(14.dp))
+            Text(
+                text = "SECS",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = colors.textMuted,
+                letterSpacing = 1.5.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(2.dp))
+
+        // 2. Main Casino Tumbler Housing Box (Pixel-Perfect Centralized Viewport)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(156.dp)
-                .clip(RoundedCornerShape(22.dp))
+                .height(140.dp)
+                .clip(RoundedCornerShape(20.dp))
                 .background(
                     if (colors.isDark) Color(0xFF0F172A).copy(alpha = 0.50f) else Color(0xFFF1F5F9).copy(alpha = 0.70f)
                 )
@@ -124,11 +165,11 @@ fun CasinoTimeTumbler(
                     brush = Brush.verticalGradient(
                         listOf(
                             SecondaryCyan.copy(alpha = 0.55f),
-                            colors.surfaceBorder.copy(alpha = 0.40f),
+                            colors.surfaceBorder.copy(alpha = 0.35f),
                             AccentAmber.copy(alpha = 0.55f)
                         )
                     ),
-                    shape = RoundedCornerShape(22.dp)
+                    shape = RoundedCornerShape(20.dp)
                 ),
             contentAlignment = Alignment.Center
         ) {
@@ -136,7 +177,7 @@ fun CasinoTimeTumbler(
             Box(
                 modifier = Modifier
                     .fillMaxWidth(0.96f)
-                    .height(46.dp)
+                    .height(44.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .background(
                         if (colors.isDark) Color(0xFF1E293B).copy(alpha = 0.75f) else Color(0xFFFFFFFF).copy(alpha = 0.90f)
@@ -164,7 +205,6 @@ fun CasinoTimeTumbler(
             ) {
                 // Column 1: HOURS (00-23 looping)
                 LoopingTumblerReel(
-                    title = "HOURS",
                     count = 24,
                     state = hourState,
                     selectedModValue = currentSelectedHour,
@@ -172,19 +212,24 @@ fun CasinoTimeTumbler(
                     modifier = Modifier.weight(1f)
                 )
 
-                // Colon Separator
-                Text(
-                    text = ":",
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = SecondaryCyan.copy(alpha = 0.85f),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.width(14.dp)
-                )
+                // Colon Separator (Aligned exactly to center)
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .width(14.dp)
+                        .height(44.dp)
+                ) {
+                    Text(
+                        text = ":",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = SecondaryCyan.copy(alpha = 0.85f),
+                        textAlign = TextAlign.Center
+                    )
+                }
 
                 // Column 2: MINUTES (00-59 looping)
                 LoopingTumblerReel(
-                    title = "MINS",
                     count = 60,
                     state = minuteState,
                     selectedModValue = currentSelectedMinute,
@@ -192,19 +237,24 @@ fun CasinoTimeTumbler(
                     modifier = Modifier.weight(1f)
                 )
 
-                // Colon Separator
-                Text(
-                    text = ":",
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = AccentAmber.copy(alpha = 0.85f),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.width(14.dp)
-                )
+                // Colon Separator (Aligned exactly to center)
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .width(14.dp)
+                        .height(44.dp)
+                ) {
+                    Text(
+                        text = ":",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = AccentAmber.copy(alpha = 0.85f),
+                        textAlign = TextAlign.Center
+                    )
+                }
 
                 // Column 3: SECONDS (00-59 looping)
                 LoopingTumblerReel(
-                    title = "SECS",
                     count = 60,
                     state = secondState,
                     selectedModValue = currentSelectedSecond,
@@ -230,9 +280,9 @@ fun CasinoTimeTumbler(
             )
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
-        // Quick Jump Preset Chips Row
+        // 3. Quick Jump Preset Chips Row
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -288,7 +338,6 @@ fun CasinoTimeTumbler(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun LoopingTumblerReel(
-    title: String,
     count: Int,
     state: LazyListState,
     selectedModValue: Int,
@@ -300,63 +349,49 @@ private fun LoopingTumblerReel(
     val colors = AppTheme.colors
     val totalVirtualCount = count * VIRTUAL_MULTIPLIER
 
-    Column(
+    LazyColumn(
+        state = state,
+        flingBehavior = flingBehavior,
+        contentPadding = PaddingValues(vertical = 48.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
+            .fillMaxWidth()
+            .height(140.dp)
     ) {
-        Text(
-            text = title,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Bold,
-            color = colors.textMuted,
-            letterSpacing = 1.sp,
-            modifier = Modifier.padding(bottom = 2.dp)
-        )
+        items(
+            count = totalVirtualCount,
+            key = { index -> index }
+        ) { index ->
+            val modValue = index % count
+            val isSelected = modValue == selectedModValue
 
-        LazyColumn(
-            state = state,
-            flingBehavior = flingBehavior,
-            contentPadding = PaddingValues(vertical = itemHeight),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(itemHeight * 3)
-        ) {
-            items(
-                count = totalVirtualCount,
-                key = { index -> index }
-            ) { index ->
-                val modValue = index % count
-                val isSelected = modValue == selectedModValue
+            val scale by animateFloatAsState(
+                targetValue = if (isSelected) 1.15f else 0.80f,
+                animationSpec = tween(100),
+                label = "reelScale"
+            )
+            val alphaVal by animateFloatAsState(
+                targetValue = if (isSelected) 1f else 0.30f,
+                animationSpec = tween(100),
+                label = "reelAlpha"
+            )
 
-                val scale by animateFloatAsState(
-                    targetValue = if (isSelected) 1.15f else 0.80f,
-                    animationSpec = tween(100),
-                    label = "reelScale"
-                )
-                val alphaVal by animateFloatAsState(
-                    targetValue = if (isSelected) 1f else 0.30f,
-                    animationSpec = tween(100),
-                    label = "reelAlpha"
-                )
-
-                Box(
+            Box(
+                modifier = Modifier
+                    .height(itemHeight)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = String.format("%02d", modValue),
+                    fontSize = if (isSelected) 24.sp else 18.sp,
+                    fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.SemiBold,
+                    color = if (isSelected) accentColor else colors.textPrimary,
+                    textAlign = TextAlign.Center,
                     modifier = Modifier
-                        .height(itemHeight)
-                        .fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = String.format("%02d", modValue),
-                        fontSize = if (isSelected) 24.sp else 18.sp,
-                        fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.SemiBold,
-                        color = if (isSelected) accentColor else colors.textPrimary,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier
-                            .scale(scale)
-                            .alpha(alphaVal)
-                    )
-                }
+                        .scale(scale)
+                        .alpha(alphaVal)
+                )
             }
         }
     }

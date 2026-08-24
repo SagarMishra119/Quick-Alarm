@@ -78,7 +78,7 @@ fun CustomDurationDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(scrollState)
-                    .padding(20.dp),
+                    .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Header Row
@@ -93,7 +93,7 @@ fun CustomDurationDialog(
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(36.dp)
+                                .size(34.dp)
                                 .background(if (colors.isDark) Color(0xFF1E1B4B) else Color(0xFFEEF2FF), CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
@@ -101,13 +101,13 @@ fun CustomDurationDialog(
                                 imageVector = Icons.Default.HourglassTop,
                                 contentDescription = null,
                                 tint = PrimaryIndigo,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(18.dp)
                             )
                         }
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
                             text = "Custom Countdown Timer",
-                            fontSize = 18.sp,
+                            fontSize = 17.sp,
                             fontWeight = FontWeight.Bold,
                             color = colors.textPrimary,
                             maxLines = 1
@@ -115,7 +115,7 @@ fun CustomDurationDialog(
                     }
                     IconButton(
                         onClick = onDismiss,
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier.size(30.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
@@ -125,7 +125,7 @@ fun CustomDurationDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 // Dynamic Time-of-Day Category Badge
                 Box(

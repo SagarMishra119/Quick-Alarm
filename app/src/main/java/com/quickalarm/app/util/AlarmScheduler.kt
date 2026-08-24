@@ -22,7 +22,7 @@ import java.util.Locale
 object AlarmScheduler {
 
     const val CHANNEL_ID = "quick_alarm_channel_v2"
-    const val STATUS_CHANNEL_ID = "quick_alarm_status_channel_v1"
+    const val STATUS_CHANNEL_ID = "quick_alarm_status_channel_v2"
     private const val NOTIF_ID_STATUS = 9999
     private const val PREFS_NAME = "quick_alarm_prefs"
     private const val KEY_ALARMS = "saved_alarms"
@@ -187,7 +187,7 @@ object AlarmScheduler {
     }
 
     /**
-     * Creates a silent, low-priority channel for displaying the active alarm status indicator
+     * Creates a silent status channel for displaying the active alarm status indicator
      * in the system status bar and notification shade without sound or vibration.
      */
     fun createStatusNotificationChannel(context: Context) {
@@ -195,7 +195,7 @@ object AlarmScheduler {
             val channel = NotificationChannel(
                 STATUS_CHANNEL_ID,
                 "Active Alarm Indicator",
-                NotificationManager.IMPORTANCE_LOW
+                NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
                 description = "Shows an active status bar indicator when an alarm is armed"
                 setSound(null, null)
@@ -240,13 +240,15 @@ object AlarmScheduler {
                     .setContentTitle("Quick Alarm Active")
                     .setContentText("Next alarm at $formattedTime ($remainingTime)")
                     .setSubText(nextAlarm.label)
-                    .setPriority(NotificationCompat.PRIORITY_LOW)
-                    .setCategory(NotificationCompat.CATEGORY_STATUS)
+                    .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                    .setCategory(NotificationCompat.CATEGORY_ALARM)
                     .setOngoing(true)
                     .setSilent(true)
                     .setAutoCancel(false)
                     .setContentIntent(pendingIntent)
                     .build()
+
+                notification.flags = notification.flags or Notification.FLAG_NO_CLEAR or Notification.FLAG_ONGOING_EVENT
 
                 notificationManager.notify(NOTIF_ID_STATUS, notification)
             } else {
