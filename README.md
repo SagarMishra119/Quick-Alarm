@@ -19,9 +19,10 @@ Quick Alarm is designed for instant action—schedule alarms in a single tap wit
 
 * **🌙 Aesthetic Moonlit Night Sky (Dark Mode):** HD full moon & starry night background with frosted glassmorphism cards and pure white high-contrast text.
 * **☀️ Early Morning Dawn & Sunrise (Light Mode):** Sky-blue atmosphere with a radiant golden dawn sun glow and bold deep-slate headings.
-* **🎰 Casino Slot Tumbler Duration Wheel (v3.5.2):** Tactile 3-column rolling wheels (`00..23h : 00..59m : 00..59s`) with kinetic momentum snapping, frosted center magnifier lens, and 1-tap quick jump chips for presets and custom timers.
+* **🎰 Casino Slot Tumbler Duration Wheel (v3.5.4):** 3-column continuous 360° infinite virtual looping wheels (`00..23h : 00..59m : 00..59s`) with kinetic momentum snapping, dead-center laser magnifier lens, separated headers, and 1-tap quick jump chips for presets and custom timers.
 * **🕒 Liquid 12-Hour Clock Dial & Top AM/PM Tab:** Precision circular clock dials with glowing electric cyan hands and a liquid glass AM/PM segmented toggle for daily alarms.
 * **⏱️ Precision Seconds Tab Strip:** 1-tap single-second accuracy strip (`00s`, `15s`, `30s`, `45s`) for exact timer configuration.
+* **📌 Guaranteed OEM Status Bar Alarm Icon:** Upgraded persistent channel (`CATEGORY_ALARM` with `FLAG_NO_CLEAR`) ensuring the top status bar app icon remains visible across Vivo, Xiaomi, Samsung, and Pixel devices.
 * **⚡ Instant One-Tap Presets:** Schedule countdown alarms instantly with customizable cards (e.g. `+15m`, `+30m`, `+1h`, `+2h`). Reorder, edit, and theme presets up to 24 hours.
 * **🛡️ Fail-Safe In-App Ringing Banner & Auto-Redirect:** Pulsating emergency dismiss/snooze card guaranteeing 1-tap alarm shutoff even if notification permissions are revoked, plus a 10-minute auto-silence timeout.
 * **🔔 Single-Source Foreground Audio Engine:** Reliable, loud continuous audio ringtone playback and vibration via `AlarmSoundService` even when the app is killed or device is locked, with zero dual-sound collisions.
@@ -62,6 +63,9 @@ QuickAlarm/
 │   │   │   │   ├── SavedAlarmItem.kt         # Fixed daily clock alarm model
 │   │   │   │   └── SoundItem.kt              # Device ringtone explorer & audio URI holder
 │   │   │   ├── ui/
+│   │   │   │   ├── components/
+│   │   │   │   │   ├── CasinoTimeTumbler.kt  # 3-column infinite looping casino slot reels
+│   │   │   │   │   └── DualClockDialPicker.kt# Liquid circular clock dials & seconds tab strip
 │   │   │   │   ├── screens/
 │   │   │   │   │   ├── MainScreen.kt         # Primary dashboard with night/sunrise theme
 │   │   │   │   │   ├── SavedAlarmDialog.kt   # AM/PM daily alarm picker modal
