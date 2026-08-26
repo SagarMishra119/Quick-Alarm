@@ -23,6 +23,27 @@ class AlarmReceiver : BroadcastReceiver() {
             ACTION_TRIGGER_ALARM -> {
                 if (alarmId != -1L) {
                     AlarmScheduler.removeAlarm(context, alarmId)
+
+                    // Auto-rearm recurring saved alarms or disable one-shot specific-date alarms
+                    val savedAlarms = com.quickalarm.app.util.AppSettings.getSavedAlarms(context)
+                    val matchingSaved = savedAlarms.find { it.id == alarmId }
+                    if (matchingSaved != null && matchingSaved.isEnabled) {
+                        if (matchingSaved.specificDateMillis != null) {
+                            // Specific date alarm fired -> disable it
+                            com.quickalarm.app.util.AppSettings.updateSavedAlarm(context, matchingSaved.copy(isEnabled = false))
+                        } else {
+                            // Recurring alarm (Everyday or Day-of-week) -> schedule next occurrence
+                            val nextTrigger = matchingSaved.getNextTriggerTimeMillis()
+                            val nextAlarmItem = com.quickalarm.app.model.AlarmItem(
+                                id = matchingSaved.id,
+                                label = matchingSaved.label,
+                                durationMinutes = 0,
+                                triggerTimeMillis = nextTrigger,
+                                createdAtMillis = System.currentTimeMillis()
+                            )
+                            AlarmScheduler.scheduleAlarm(context, nextAlarmItem)
+                        }
+                    }
                 }
 
                 // Start Foreground AlarmSoundService so audio rings & vibrates even if app is closed/killed!

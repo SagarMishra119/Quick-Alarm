@@ -23,8 +23,8 @@ android {
         applicationId = "com.quickalarm.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 13
-        versionName = "3.5.4"
+        versionCode = 14
+        versionName = "3.6.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

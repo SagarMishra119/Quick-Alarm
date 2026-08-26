@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [3.6.0] - 2026-08-26
+
+### Added
+- **🔁 Everyday & Custom Day-of-Week Recurring Alarms:** Added a full recurrence scheduler in `SavedAlarmDialog.kt` with 7 circular day chips (`[ S | M | T | W | T | F | S ]`) and quick presets (`Weekdays (M-F)`, `Weekends (S-S)`, `Everyday`). Automatically calculates and rearms the next matching occurrence after firing.
+- **📅 Specific Calendar Date Alarms:** Added option to schedule alarms for exact future calendar dates (e.g. `📅 Oct 14, 2026`) via native DatePicker modal and quick date chips (`Tomorrow`, `This Weekend`). One-shot execution automatically deactivates after the target date.
+- **🕒 Optimized Dial Sizing & Balanced Layout:** Reduced Hour (`64dp`) and Minute (`50dp`) dial radii to fit the recurrence tabs below the precision seconds selector with zero clipping or layout crowding.
+- **🏷️ Dashboard Recurrence Badges:** Saved alarm cards on the main dashboard now display dynamic recurrence summaries (e.g. `• Weekdays`, `• Every day`, `• 📅 Oct 14`).
+
+### Changed
+- **Version Code Bump:** Incremented `versionCode` to `14` and `versionName` to `3.6.0`.
+
+---
+
 ## [3.5.4] - 2026-08-24
 
 ### Fixed & Improved

@@ -915,7 +915,7 @@ fun HeaderClockSection() {
                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                         ) {
                             Text(
-                                text = "v3.5.4",
+                                text = "v3.6.0",
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
@@ -992,12 +992,28 @@ fun SavedAlarmRowCard(
                     color = if (saved.isEnabled) colors.textPrimary else colors.textMuted
                 )
                 Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = saved.label,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = if (saved.isEnabled) (if (colors.isDark) AccentEmerald else Color(0xFF047857)) else colors.textSecondary
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = saved.label,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = if (saved.isEnabled) (if (colors.isDark) AccentEmerald else Color(0xFF047857)) else colors.textSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "• ${saved.getScheduleSummary()}",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (saved.isEnabled) SecondaryCyan else colors.textMuted,
+                        maxLines = 1
+                    )
+                }
             }
 
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
