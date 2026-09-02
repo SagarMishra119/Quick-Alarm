@@ -1,8 +1,8 @@
 # Quick Alarm ⏰
 
-A fast, lightweight, modern, and **100% offline** Android alarm and quick-timer application built with **Kotlin** and **Jetpack Compose**.
+A fast, lightweight, ultra-reliable, and **100% offline** Android alarm and quick-timer application built with modern **Kotlin** and **Jetpack Compose (Material 3)**.
 
-Quick Alarm is designed for instant action—schedule alarms in a single tap with customizable presets, manage stored daily clock alarms, pick sounds from your device's built-in ringtone library, and enjoy dynamic system Light & Dark mode adaptation featuring an aesthetic moonlit starry night sky in Dark Mode and a golden dawn sunrise in Light Mode.
+Quick Alarm is designed for instant action—schedule alarms in a single tap with customizable presets, set recurring everyday or day-based alarms, schedule calendar date reminders, manage stored daily clock alarms, and pick sounds from your device's built-in ringtone library. It features dynamic system Light & Dark mode adaptation with an aesthetic moonlit starry night sky in Dark Mode and a golden dawn sunrise in Light Mode.
 
 ---
 
@@ -17,11 +17,13 @@ Quick Alarm is designed for instant action—schedule alarms in a single tap wit
 
 ## 🌟 Key Highlights
 
-* **🌙 Aesthetic Moonlit Night Sky (Dark Mode):** HD full moon & starry night background with frosted glassmorphism cards and pure white high-contrast text.
+* **🌙 Aesthetic Moonlit Night Sky (Dark Mode):** Dynamic HD full moon & starry night background with frosted glassmorphism cards and high-contrast typography.
 * **☀️ Early Morning Dawn & Sunrise (Light Mode):** Sky-blue atmosphere with a radiant golden dawn sun glow and bold deep-slate headings.
-* **🎰 Casino Slot Tumbler Duration Wheel (v3.5.4):** 3-column continuous 360° infinite virtual looping wheels (`00..23h : 00..59m : 00..59s`) with kinetic momentum snapping, dead-center laser magnifier lens, separated headers, and 1-tap quick jump chips for presets and custom timers.
-* **🕒 Liquid 12-Hour Clock Dial & Top AM/PM Tab:** Precision circular clock dials with glowing electric cyan hands and a liquid glass AM/PM segmented toggle for daily alarms.
-* **⏱️ Precision Seconds Tab Strip:** 1-tap single-second accuracy strip (`00s`, `15s`, `30s`, `45s`) for exact timer configuration.
+* **🔁 Everyday & Custom Day-of-Week Recurring Alarms (v3.6.0):** 7-day selector (`[ S | M | T | W | T | F | S ]`) with quick presets (`Weekdays (M-F)`, `Weekends (S-S)`, `Everyday`) and automatic re-arming upon dismissal.
+* **📅 Specific Calendar Date Alarms (v3.6.0):** Schedule alarms for exact future dates (e.g. `📅 Oct 14, 2026`) via native DatePicker modal and quick date chips (`Tomorrow`, `This Weekend`).
+* **🎰 Casino Slot Tumbler Duration Wheel:** 3-column continuous 360° infinite virtual looping wheels (`00..23h : 00..59m : 00..59s`) with momentum snapping, dead-center laser magnifier lens, and 1-tap quick jump chips for presets and custom timers.
+* **🕒 Liquid 12-Hour Clock Dial & Top AM/PM Tab:** Precision circular clock dials with glowing electric cyan hands, balanced proportions, and a liquid glass AM/PM segmented toggle.
+* **⏱️ Precision Seconds Tab Strip:** 1-tap single-second accuracy strip (`00s`, `15s`, `30s`, `45s`) across time-setting interfaces.
 * **📌 Guaranteed OEM Status Bar Alarm Icon:** Upgraded persistent channel (`CATEGORY_ALARM` with `FLAG_NO_CLEAR`) ensuring the top status bar app icon remains visible across Vivo, Xiaomi, Samsung, and Pixel devices.
 * **⚡ Instant One-Tap Presets:** Schedule countdown alarms instantly with customizable cards (e.g. `+15m`, `+30m`, `+1h`, `+2h`). Reorder, edit, and theme presets up to 24 hours.
 * **🛡️ Fail-Safe In-App Ringing Banner & Auto-Redirect:** Pulsating emergency dismiss/snooze card guaranteeing 1-tap alarm shutoff even if notification permissions are revoked, plus a 10-minute auto-silence timeout.
@@ -55,12 +57,12 @@ QuickAlarm/
 │   │   │   ├── MainActivity.kt               # Main entry point with dynamic theme provider
 │   │   │   ├── AlarmActivity.kt              # Full-screen alarm ringing overlay & wake-lock
 │   │   │   ├── AlarmSoundService.kt          # Single-source foreground media playback service
-│   │   │   ├── AlarmReceiver.kt              # BroadcastReceiver triggering alarms & foreground service
+│   │   │   ├── AlarmReceiver.kt              # BroadcastReceiver triggering alarms & auto-rearm
 │   │   │   ├── BootReceiver.kt               # BroadcastReceiver restoring alarms on device reboot
 │   │   │   ├── model/
 │   │   │   │   ├── AlarmItem.kt              # Active alarm data model
 │   │   │   │   ├── PresetItem.kt             # Preset configuration model (colors, titles, minutes)
-│   │   │   │   ├── SavedAlarmItem.kt         # Fixed daily clock alarm model
+│   │   │   │   ├── SavedAlarmItem.kt         # Recurring & date-based alarm model
 │   │   │   │   └── SoundItem.kt              # Device ringtone explorer & audio URI holder
 │   │   │   ├── ui/
 │   │   │   │   ├── components/
@@ -68,7 +70,7 @@ QuickAlarm/
 │   │   │   │   │   └── DualClockDialPicker.kt# Liquid circular clock dials & seconds tab strip
 │   │   │   │   ├── screens/
 │   │   │   │   │   ├── MainScreen.kt         # Primary dashboard with night/sunrise theme
-│   │   │   │   │   ├── SavedAlarmDialog.kt   # AM/PM daily alarm picker modal
+│   │   │   │   │   ├── SavedAlarmDialog.kt   # AM/PM, repeat & calendar date alarm picker modal
 │   │   │   │   │   ├── CustomDurationDialog.kt # Relative countdown timer dialog
 │   │   │   │   │   ├── SoundPickerDialog.kt  # OEM ringtone scanner & preview player
 │   │   │   │   │   ├── SnoozeDurationDialog.kt # Snooze interval configuration
@@ -103,7 +105,7 @@ QuickAlarm/
 ### 1. Prerequisites
 Ensure you have the following installed on your machine:
 * **JDK:** Java Development Kit 17 (e.g. OpenJDK 17)
-* **Android SDK:** Android SDK Command-line Tools / SDK Platform 34
+* **Android SDK:** Android SDK Command-line Tools / SDK Platform 34+
 * **Git:** Installed and configured in PATH
 * **Android Studio:** Hedgehog (2023.1.1) or newer *(Optional, for GUI development)*
 
